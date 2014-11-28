@@ -1,0 +1,6 @@
+c:\users\vm\documents\visual studio 2013\Projects\BoxBlaster\BoxBlaster\bin\BoxBlaster.dll.config
+c:\users\vm\documents\visual studio 2013\Projects\BoxBlaster\BoxBlaster\bin\BoxBlaster.dll
+c:\users\vm\documents\visual studio 2013\Projects\BoxBlaster\BoxBlaster\bin\BoxBlaster.pdb
+c:\users\vm\documents\visual studio 2013\Projects\BoxBlaster\BoxBlaster\obj\Debug\BoxBlaster.csprojResolveAssemblyReference.cache
+c:\users\vm\documents\visual studio 2013\Projects\BoxBlaster\BoxBlaster\obj\Debug\BoxBlaster.dll
+c:\users\vm\documents\visual studio 2013\Projects\BoxBlaster\BoxBlaster\obj\Debug\BoxBlaster.pdb
