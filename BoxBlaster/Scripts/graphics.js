@@ -1,13 +1,13 @@
 ﻿$(function () {
 
-    document.addEventListener("mousemove", mousemove);    
+    document.addEventListener("mousemove", mousemove);
     document.addEventListener("mousedown", mouseclick);
     document.addEventListener("keydown", keydown);
     document.addEventListener("keyup", keyup);
 
     //document.getElementById('wrapperDiv').addEventListener("keydown", keydown);
     //document.getElementById('wrapperDiv').addEventListener("keyup", keyup);
-    
+
     var targetFPS = 25;
     //window.onresize = windowresize;
 
@@ -76,14 +76,14 @@
             this.move_S = false,
             this.move_W = false,
             this.move_E = false;
-            this.speed = 125/targetFPS;
+            this.speed = 125 / targetFPS;
             this.color = "blue";
             this.aim_color = "red";
             this.text_color = "white";
             this.DrawToCanvasContext = function (ctx) {
                 //draw rectangle
                 ctx.fillStyle = this.color;
-                ctx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
 
                 //draw aim
                 ctx.beginPath()
@@ -94,7 +94,7 @@
 
                 //add name
                 ctx.fillStyle = this.text_color;
-                ctx.fillText(this.name, this.x - this.width/2, this.y - this.height / 4, this.width);
+                ctx.fillText(this.name, this.x - this.width / 2, this.y - this.height / 4, this.width);
 
             };
 
@@ -127,13 +127,15 @@
                     this.x -= this.speed;
                 if (this.move_E)
                     this.x += this.speed;
+
+                checkForCollisions(this);
             };
 
             this.firePew = function () {
-                var vector = new Vector(375/targetFPS,0);
+                var vector = new Vector(375 / targetFPS, 0);
                 vector.SetDirectionFromPoints(new Point(this.x, this.y), new Point(this.aim_x, this.aim_y));
                 var pewBox = new PewPew(vector);
-                pewBox.id = this.id;
+                pewBox.sourceId = this.id;
                 pewBox.x = this.x;
                 pewBox.y = this.y;
                 pewBox.MoveMe();
@@ -142,7 +144,7 @@
 
             // what happens when this box hits something
             this.handleCollision = function (objHit) {
-                
+
                 //determine direction of hit
                 var direction = relativeCardinalDirection(this, objHit);
 
@@ -164,7 +166,7 @@
     })();
 
 
-    var Wall = (function () { 
+    var Wall = (function () {
         function Wall() {
             this.type = "Wall";
             this.id = Math.floor((1 + Math.random()) * 0x10000).toString(16);
@@ -173,7 +175,9 @@
             this.width = 30;
             this.height = 30;
             this.color = "black";
-            this.speed = Math.ceil(25/targetFPS);
+            this.speed = Math.ceil(25 / targetFPS);
+
+            //draw this wall to the context
             this.DrawToCanvasContext = function (ctx) {
                 //draw rectangle
                 ctx.fillStyle = this.color;
@@ -202,8 +206,7 @@
             }
 
             this.MoveMe = function (dir) {
-                switch(dir)
-                {
+                switch (dir) {
                     case "N":
                         this.y -= this.speed;
                         break;
@@ -215,9 +218,9 @@
                         break;
                     case "W":
                         this.x -= this.speed;
-                        break;    
+                        break;
                 }
-                
+
                 checkForCollisions(this);
             };
 
@@ -247,6 +250,7 @@
         function PewPew(vector) {
             this.type = "PewPew";
             this.id = Math.floor((1 + Math.random()) * 0x10000).toString(16);
+            this.sourceId = "";
             this.x = 0;
             this.y = 0;
             this.width = 4;
@@ -270,7 +274,7 @@
                 var topright = new Point(rightX, topY);
                 var botleft = new Point(leftX, botY);
                 var botright = new Point(rightX, botY);
-                var center = new Point(this.x, this.y);               
+                var center = new Point(this.x, this.y);
                 var tailrel = this.vector.GetRelativeEndPoint();
                 var tail = new Point(this.x - tailrel.x, this.y - tailrel.y);
 
@@ -284,14 +288,14 @@
                 return segments;
             }
 
-            
+
             this.MoveMe = function () {
                 var nextxy = this.vector.GetRelativeEndPoint();
                 this.y += nextxy.y;
                 this.x += nextxy.x;
-                //this.y += this.vector.magnitude * Math.sin(this.vector.direction);
-                //this.x += this.vector.magnitude * Math.cos(this.vector.direction);
-                //console.log(this);
+
+                checkForCollisions(this);
+
             };
 
             // what happens when pewpew hits something
@@ -303,10 +307,25 @@
                         break;
                     case "PewPew": //both pewpews explode!
                         //calculate reflector vectors for both pewpews
+                        //
+                        //
+                        //
+                        //
+
                         this.explode(thisref);
                         objHit.explode(thatref);
+                        removeObjectFromArray(PewPews, this);
+                        removeObjectFromArray(PewPews, objHit);
                         break;
-                    case "Wall":
+                    case "Wall": //pewpew exlodes!
+                        //calculate reflector vectors for both pewpews
+                        //
+                        //
+                        //
+                        //
+                        this.explode(thisref);
+                        removeObjectFromArray(PewPews, this);
+
                         break;
                 }
             }
@@ -316,48 +335,113 @@
         return PewPew;
     })();
 
+
+    var Explosion = (function () {
+        function Explosion(vector, spread, x, y) {
+            this.type = "Explosion";
+            this.frame = 0;
+            this.x = 0;
+            this.y = 0;
+            this.particles = [new Vector()];
+            //this.particles = CreateParticleArray(vector, spread);
+            
+            //draw this explosion to the context
+            this.DrawToCanvasContext = function (ctx) {
+                this.frame++;
+
+
+
+                var thisx = this.x;
+                var thisy = this.y;
+
+                this.particles.forEach(function (particle) {
+                    
+                    var baseMag = particle.magnitude;
+                    var frameMag;
+                    if(this.frame == 1)
+                        frameMag = Math.ceil(0.2 * baseMag);
+                    else
+                        frameMag = baseMag - baseMag/this.frame;
+
+                    var endpoint = new Vector(frameMag, particle.direction).GetRelativeEndPoint();
+
+                    var partx = thisx + endpoint.x;
+                    var party = thisy + endpoint.y;
+                    //draw particle
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(partx - 1, party - 1, 2, 2);
+                });
+
+            };
+
+            /// <returns type='Array' elementType='Vector'>Array of vectors</returns>
+            var CreateParticleArray = function (vec, spr) {
+                var particles = new Array();
+                var partCount = randomBetween(4, 8) // random number between 4 and 8, inclusive
+                var minDirection = vec.direction - spr / 2;
+                var maxDirection = vec.direction + spr / 2;
+
+                particles.push(new Vector(randomBetween(8, 15), minDirection));
+                particles.push(new Vector(randomBetween(8, 15), maxDirection));
+
+                for (var i = 0; i < partCount - 2; i++) {
+                    var dir = randomBetween(minDirection * 10000, maxDirection * 10000) / 10000;
+                    particles.push(new Vector(randomBetween(8, 15), dir));
+                }
+
+                return particles;
+            }
+        }
+
+        return Explosion;
+    })();
+
+    function randomBetween(min, max, inc) {
+        var _inc = inc || true;
+        var _min = min;
+        var _max = _max;
+        if (_inc)
+            _max++;
+        return Math.floor(Math.random() * (_max - _min)) + _min;
+    }
+
     // The N, S, E, W direction obj2 lies from obj1;
-    function relativeCardinalDirection (obj1, obj2)
-    {
+    function relativeCardinalDirection(obj1, obj2) {
         var deltaY = obj2.y - obj1.y;
         var deltaX = obj2.x - obj1.y;
         var direction;
 
-        if(Math.abs(deltaY) > Math.abs(deltaX))
-        {
-            if(deltaY > 0)
+        if (Math.abs(deltaY) > Math.abs(deltaX)) {
+            if (deltaY > 0)
                 direction = "S";
             else
                 direction = "N";
         }
-        else
-        {
-            if(deltaX > 0)
+        else {
+            if (deltaX > 0)
                 direction = "E";
             else
                 direction = "W";
-        }  
+        }
 
         return direction;
     }
 
     //move obj1 in cardinal direction adjacent to obj2
-    function moveAdjacent(obj1, obj2, direction)
-    {
-        switch(direction)
-        {
+    function moveAdjacent(obj1, obj2, direction) {
+        switch (direction) {
             case "N":
-                obj1.y = obj2.y + (obj2.height + obj1.height)/2;
+                obj1.y = obj2.y + (obj2.height + obj1.height) / 2;
                 break;
             case "S":
-                obj1.y = obj2.y - (obj2.height + obj1.height)/2;
+                obj1.y = obj2.y - (obj2.height + obj1.height) / 2;
                 break;
             case "E":
-                obj1.x = obj2.x - (obj2.width + obj1.width)/2;
+                obj1.x = obj2.x - (obj2.width + obj1.width) / 2;
                 break;
             case "W":
-                obj1.x = obj2.x + (obj2.width + obj1.width)/2;
-                break;    
+                obj1.x = obj2.x + (obj2.width + obj1.width) / 2;
+                break;
         }
     }
 
@@ -390,7 +474,7 @@
     for (var i = 0; i < 20; i++) {
         //Boxes[i] = null;
     }
-    
+
 
 
     var tempCanvas = document.createElement("canvas");
@@ -398,7 +482,7 @@
     drawCanvas.height = 300;//window.innerHeight;
     drawCanvas.width = 600;//window.innerWidth;
 
-    var maxDist = Math.sqrt(Math.pow(drawCanvas.height , 2) + Math.pow(drawCanvas.width , 2));
+    var maxDist = Math.sqrt(Math.pow(drawCanvas.height, 2) + Math.pow(drawCanvas.width, 2));
 
     function windowresize() {
         drawCanvas.height = window.innerHeight;
@@ -414,7 +498,7 @@
             lastMessageTime = now;
             counter++;
 
-            var angle = 
+            var angle =
 
             //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
             //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
@@ -423,7 +507,7 @@
             Boxes.forEach(function (item) {
                 item.aim_x = event.clientX;
                 item.aim_y = event.clientY;
-            });                 
+            });
         }
     }
 
@@ -433,7 +517,7 @@
             case 37:
             case 65:
                 MyBox.move_W = true;
-                event.preventDefault();                
+                event.preventDefault();
                 break;
             case 38:
             case 87:
@@ -484,7 +568,7 @@
                 break;
         }
         return false;
-        
+
     }
 
     function movebox() {
@@ -530,7 +614,7 @@
         tctx.fillStyle = "white";
         tctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-        
+
         //TestBox.DrawToCanvasContext(tctx);
         Boxes.forEach(function (item) {
             item.DrawToCanvasContext(tctx);
@@ -538,7 +622,7 @@
         PewPews.forEach(function (item) {
             item.DrawToCanvasContext(tctx);
         });
-       
+
 
         MyBox.DrawToCanvasContext(tctx);
 
@@ -578,11 +662,21 @@
 
 
 
-    var renderHandle = window.setInterval(render, 1000/targetFPS);
-    var moveDaemon = window.setInterval(movebox, 1000/targetFPS);
+    var renderHandle = window.setInterval(render, 1000 / targetFPS);
+    var moveDaemon = window.setInterval(movebox, 1000 / targetFPS);
     var audioDaemon = window.setInterval(playaudio, 300);
 
-    //http://stackoverflow.com/questions/8668174/indexof-method-in-an-object-array
+    //stackoverflow.com/questions/5767325/remove-specific-element-from-an-array
+    function removeObjectFromArray(array, obj)
+    {
+        var index = arrayObjectIndexOf(array, obj.id, "id");
+        if (index > -1) {
+            array.splice(index, 1);
+        }
+    }
+
+
+    //stackoverflow.com/questions/8668174/indexof-method-in-an-object-array
     function arrayObjectIndexOf(myArray, searchTerm, property) {
         for (var i = 0, len = myArray.length; i < len; i++) {
             if (myArray[i][property] === searchTerm) return i;
@@ -614,8 +708,7 @@
     }
 
     //determine if two line segments intersect
-    function doIntersect(line1, line2)
-    {
+    function doIntersect(line1, line2) {
         var p1 = line1.Point1;
         var p2 = line1.Point2;
         var q1 = line2.Point1;
@@ -641,7 +734,7 @@
     }
 
     function checkForCollisions(obj) {
-        switch (obj.type) {           
+        switch (obj.type) {
             case "Box":
                 break;
             case "PewPew":
