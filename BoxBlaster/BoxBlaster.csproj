@@ -66,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Audio\pew.mp3" />
+    <Content Include="Audio\pew.wav" />
     <Content Include="Default.html" />
     <Content Include="packages.config" />
     <None Include="Scripts\jquery-2.1.1.intellisense.js" />
