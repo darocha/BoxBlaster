@@ -1,11 +1,14 @@
 ﻿$(function () {
 
-    document.addEventListener("mousemove", mousemove, false);
-    document.addEventListener("mousedown", mouseclick, true);
-    
-    document.addEventListener("keydown", keydown, false);
-    document.addEventListener("keyup", keyup, false);
+    document.addEventListener("mousemove", mousemove);    
+    document.addEventListener("mousedown", mouseclick);
+    document.addEventListener("keydown", keydown);
+    document.addEventListener("keyup", keyup);
 
+    //document.getElementById('wrapperDiv').addEventListener("keydown", keydown);
+    //document.getElementById('wrapperDiv').addEventListener("keyup", keyup);
+    
+    var targetFPS = 25;
     //window.onresize = windowresize;
 
 
@@ -71,6 +74,7 @@
             this.move_S = false,
             this.move_W = false,
             this.move_E = false;
+            this.speed = 125/targetFPS;
             this.color = "blue";
             this.aim_color = "red";
             this.text_color = "white";
@@ -114,26 +118,23 @@
 
             this.MoveMe = function () {
                 if (this.move_N)
-                    this.y -= 5;
+                    this.y -= this.speed;
                 if (this.move_S)
-                    this.y += 5;
+                    this.y += this.speed;
                 if (this.move_W)
-                    this.x -= 5;
+                    this.x -= this.speed;
                 if (this.move_E)
-                    this.x += 5;
+                    this.x += this.speed;
             };
 
             this.firePew = function () {
-                var vector = new Vector(15,0);
+                var vector = new Vector(375/targetFPS,0);
                 vector.SetDirectionFromPoints(new Point(this.x, this.y), new Point(this.aim_x, this.aim_y));
                 var pewBox = new PewPew(vector);
                 pewBox.id = this.id;
                 pewBox.x = this.x;
                 pewBox.y = this.y;
-                console.log(pewBox);
-                console.log(pewBox.vector);
                 pewBox.MoveMe();
-                console.log(pewBox);
                 PewPews.push(pewBox);
             };
 
@@ -247,14 +248,14 @@
         var now = new Date();
 
        //console.log(now + " " + lastMessageTime)
-        if (now - lastMessageTime >= 40) {
+        if (now - lastMessageTime >= 10) {
             lastMessageTime = now;
             counter++;
 
             var angle = 
 
             //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
-            console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
+            //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
             MyBox.aim_x = event.clientX;
             MyBox.aim_y = event.clientY;
             Boxes.forEach(function (item) {
@@ -265,7 +266,7 @@
     }
 
     function keydown(event) {
-        console.log("Keydown: code =" + event.keyCode)
+        //console.log("Keydown: code =" + event.keyCode)
         switch (event.keyCode) {
             case 37:
             case 65:
@@ -297,7 +298,7 @@
     }
 
     function keyup(event) {
-        console.log("Keyup: code =" + event.keyCode)
+        //console.log("Keyup: code =" + event.keyCode)
         switch (event.keyCode) {
             case 37:
             case 65:
@@ -342,8 +343,8 @@
     }
 
     function mouseclick(event) {
-        console.log("click event fired!");
-
+        //console.log("click event fired!");
+        MyBox.firePew();
         // Gets quieter as you move away from origin
         //var dist = Math.sqrt(Math.pow(MyBox.x, 2) + Math.pow(MyBox.y, 2));
         //var pew = new Audio("Audio/pew.mp3");        
@@ -401,9 +402,23 @@
         }
     }
 
-    var renderHandle = window.setInterval(render, 40);
-    var moveDaemon = window.setInterval(movebox, 40);
-    var audioDaemon = window.setInterval(playaudio, 100);
+//    var gameLoop = window.setInterval(loopHandler, Math.floor(1000/targetFPS));
+//
+//    var counter = 0;
+//    function loopHandler() {
+//        counter++;
+//        render();
+//        movebox();
+//
+//        if (counter % Math.floor(targetFPS/3) == 0)
+//           playaudio();
+//    }
+
+
+
+    var renderHandle = window.setInterval(render, 1000/targetFPS);
+    var moveDaemon = window.setInterval(movebox, 1000/targetFPS);
+    var audioDaemon = window.setInterval(playaudio, 300);
 
     //http://stackoverflow.com/questions/8668174/indexof-method-in-an-object-array
     function arrayObjectIndexOf(myArray, searchTerm, property) {
@@ -411,5 +426,55 @@
             if (myArray[i][property] === searchTerm) return i;
         }
         return -1;
+    }
+
+    //www.geeksforgeeks.org/check-if-two-given-line-segments-intersect
+    // checks if colinear points are on a given lines segment
+    function onSegment(p, q, r) {
+        if (q.x <= Math.max(p.x, r.x) && q.x >= min(p.x, r.x) &&
+            q.y <= Math.max(p.y, r.y) && q.y >= min(p.y, r.y))
+            return true;
+
+        return false;
+    }
+
+    //finds orientation of triplet
+    //0 = colinear
+    //1 = Clockwise
+    //2 = Counterclockwise
+    function orientation(p, q, r) {
+        var val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+
+        if (val == 0)
+            return 0;
+
+        return (val > 1) ? 1 : 2;
+    }
+
+    //determine if two line segments intersect
+    function doIntersect(line1, line2)
+    {
+        var p1 = line1.Point1;
+        var p2 = line1.Point2;
+        var q1 = line2.Point1;
+        var q2 = line2.Point2;
+
+        var o1 = orientation(p1, q1, p2);
+        var o2 = orientation(p1, q1, q2);
+        var o3 = orientation(p2, q2, p1);
+        var o4 = orientation(p2, q2, q1);
+
+        //General case
+        if (o1 != o2 && o3 != o4)
+            return true;
+
+        //Special cases
+        // three point colinear with one point on other segment
+        if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+        if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+        if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+        if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+        return false;
     }
 });
