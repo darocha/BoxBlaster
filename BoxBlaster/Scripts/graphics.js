@@ -61,6 +61,7 @@
 
     var Box = (function () {
         function Box() {
+            this.type = "Box";
             this.id = Math.floor((1 + Math.random()) * 0x10000).toString(16);
             this.name = "Troy";
             this.x = 25;
@@ -138,6 +139,16 @@
                 PewPews.push(pewBox);
             };
 
+            this.handleCollision = function (objHit) {
+                switch (objHit.type) {
+                    case "Box":
+                        break;
+                    case "PewPew":
+                        break;
+                    case "Wall":
+                        break;
+                }
+            }
         }
 
         return Box;
@@ -146,6 +157,7 @@
 
     var PewPew = (function () {
         function PewPew(vector) {
+            this.type = "PewPew";
             this.id = Math.floor((1 + Math.random()) * 0x10000).toString(16);
             this.x = 0;
             this.y = 0;
@@ -192,6 +204,17 @@
                 //this.x += this.vector.magnitude * Math.cos(this.vector.direction);
                 //console.log(this);
             };
+
+            this.handleCollision = function (objHit) {
+                switch (objHit.type) {
+                    case "Box":
+                        break;
+                    case "PewPew":
+                        break;
+                    case "Wall":
+                        break;
+                }
+            }
 
         }
 
@@ -476,5 +499,9 @@
         if (o4 == 0 && onSegment(p2, q1, q2)) return true;
 
         return false;
+    }
+
+    function checkForCollisions(obj) {
+
     }
 });
