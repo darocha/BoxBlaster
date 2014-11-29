@@ -22,9 +22,10 @@
     })();
 
     var LineSegment = (function () {
-        function LineSegment(point1, point2) {
+        function LineSegment(point1, point2, name) {
             this.Point1 = point1 || new Point();
             this.Point2 = point2 || new Point();
+            this.name = name || '';
         }
 
         return LineSegment;
@@ -139,13 +140,21 @@
                 PewPews.push(pewBox);
             };
 
+            // what happens when this box hits something
             this.handleCollision = function (objHit) {
+                
+                //determine direction of hit
+                var direction = relativeCardinalDirection(this, objHit);
+
                 switch (objHit.type) {
-                    case "Box":
+                    case "Box": //the other box doesn't move, this box stops adjacent
+                        moveAdjacent(this, objHit, direction);
                         break;
-                    case "PewPew":
+                    case "PewPew": //boxes don't hit pewpews, pewpews hit boxes
                         break;
-                    case "Wall":
+                    case "Wall": //wall tries to move, this box stops adjacent
+                        objHit.MoveMe(direction);
+                        moveAdjacent(this, objHit, direction);
                         break;
                 }
             }
@@ -154,6 +163,85 @@
         return Box;
     })();
 
+
+    var Wall = (function () { 
+        function Wall() {
+            this.type = "Wall";
+            this.id = Math.floor((1 + Math.random()) * 0x10000).toString(16);
+            this.x = 0;
+            this.y = 0;
+            this.width = 30;
+            this.height = 30;
+            this.color = "black";
+            this.speed = Math.ceil(25/targetFPS);
+            this.DrawToCanvasContext = function (ctx) {
+                //draw rectangle
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+
+            };
+
+            this.GetLineSegments = function () {
+                var topY = this.y - this.height / 2;
+                var botY = this.y + this.height / 2;
+                var leftX = this.x - this.width / 2;
+                var rightX = this.x + this.width / 2;
+
+                var topleft = new Point(leftX, topY);
+                var topright = new Point(rightX, topY);
+                var botleft = new Point(leftX, botY);
+                var botright = new Point(rightX, botY);
+
+                var segments = new Array();
+                segments.push(new LineSegment(topleft, botleft, "left")); // left side
+                segments.push(new LineSegment(topleft, topright, "top")); // top side
+                segments.push(new LineSegment(topright, botright, "right")); // right side
+                segments.push(new LineSegment(botleft, botright, "bottom")); // bottom side
+
+                return segments;
+            }
+
+            this.MoveMe = function (dir) {
+                switch(dir)
+                {
+                    case "N":
+                        this.y -= this.speed;
+                        break;
+                    case "S":
+                        this.y += this.speed;
+                        break;
+                    case "E":
+                        this.x += this.speed;
+                        break;
+                    case "W":
+                        this.x -= this.speed;
+                        break;    
+                }
+                
+                checkForCollisions(this);
+            };
+
+            // what happens when this wall hits something
+            this.handleCollision = function (objHit) {
+
+                //determine direction of hit
+                var direction = relativeCardinalDirection(this, objHit);
+
+                switch (objHit.type) {
+                    case "Box": //the box doesn't move, this wall stops adjacent
+                        moveAdjacent(this, objHit, direction);
+                        break;
+                    case "PewPew": //walls don't hit pewpews, pewpews hit walls...
+                        break;
+                    case "Wall": //the other wall doesn't move, this wall stops adjacent
+                        moveAdjacent(this, objHit, direction);
+                        break;
+                }
+            }
+        }
+
+        return Wall;
+    })();
 
     var PewPew = (function () {
         function PewPew(vector) {
@@ -196,6 +284,7 @@
                 return segments;
             }
 
+            
             this.MoveMe = function () {
                 var nextxy = this.vector.GetRelativeEndPoint();
                 this.y += nextxy.y;
@@ -205,11 +294,17 @@
                 //console.log(this);
             };
 
+            // what happens when pewpew hits something
             this.handleCollision = function (objHit) {
                 switch (objHit.type) {
-                    case "Box":
+                    case "Box": //pewpew disappears, box dies
+                        this.remove();
+                        objHid.die(this);
                         break;
-                    case "PewPew":
+                    case "PewPew": //both pewpews explode!
+                        //calculate reflector vectors for both pewpews
+                        this.explode(thisref);
+                        objHit.explode(thatref);
                         break;
                     case "Wall":
                         break;
@@ -221,6 +316,50 @@
         return PewPew;
     })();
 
+    // The N, S, E, W direction obj2 lies from obj1;
+    function relativeCardinalDirection (obj1, obj2)
+    {
+        var deltaY = obj2.y - obj1.y;
+        var deltaX = obj2.x - obj1.y;
+        var direction;
+
+        if(Math.abs(deltaY) > Math.abs(deltaX))
+        {
+            if(deltaY > 0)
+                direction = "S";
+            else
+                direction = "N";
+        }
+        else
+        {
+            if(deltaX > 0)
+                direction = "E";
+            else
+                direction = "W";
+        }  
+
+        return direction;
+    }
+
+    //move obj1 in cardinal direction adjacent to obj2
+    function moveAdjacent(obj1, obj2, direction)
+    {
+        switch(direction)
+        {
+            case "N":
+                obj1.y = obj2.y + (obj2.height + obj1.height)/2;
+                break;
+            case "S":
+                obj1.y = obj2.y - (obj2.height + obj1.height)/2;
+                break;
+            case "E":
+                obj1.x = obj2.x - (obj2.width + obj1.width)/2;
+                break;
+            case "W":
+                obj1.x = obj2.x + (obj2.width + obj1.width)/2;
+                break;    
+        }
+    }
 
     var Boxes = new Array();
     var PewPews = new Array();
@@ -231,7 +370,7 @@
     //var x = 25, y = 25;
     //var aim_x, aim_y;
     //var move_N = false,
-     //   move_S = false,
+    //   move_S = false,
     //    move_W = false,
     //    move_E = false;
 
@@ -270,7 +409,7 @@
     function mousemove(event) {
         var now = new Date();
 
-       //console.log(now + " " + lastMessageTime)
+        //console.log(now + " " + lastMessageTime)
         if (now - lastMessageTime >= 10) {
             lastMessageTime = now;
             counter++;
@@ -356,13 +495,13 @@
             pew.MoveMe();
         });
         //if (MyBox.move_N)
-         //   MyBox.y -= 5;
+        //   MyBox.y -= 5;
         //if (MyBox.move_S)
-          //  MyBox.y += 5;
+        //  MyBox.y += 5;
         //if (MyBox.move_W)
-          //  MyBox.x -= 5;
+        //  MyBox.x -= 5;
         //if (MyBox.move_E)
-          //  MyBox.x += 5;
+        //  MyBox.x += 5;
     }
 
     function mouseclick(event) {
@@ -425,17 +564,17 @@
         }
     }
 
-//    var gameLoop = window.setInterval(loopHandler, Math.floor(1000/targetFPS));
-//
-//    var counter = 0;
-//    function loopHandler() {
-//        counter++;
-//        render();
-//        movebox();
-//
-//        if (counter % Math.floor(targetFPS/3) == 0)
-//           playaudio();
-//    }
+    //    var gameLoop = window.setInterval(loopHandler, Math.floor(1000/targetFPS));
+    //
+    //    var counter = 0;
+    //    function loopHandler() {
+    //        counter++;
+    //        render();
+    //        movebox();
+    //
+    //        if (counter % Math.floor(targetFPS/3) == 0)
+    //           playaudio();
+    //    }
 
 
 
@@ -502,6 +641,15 @@
     }
 
     function checkForCollisions(obj) {
-
+        switch (obj.type) {           
+            case "Box":
+                break;
+            case "PewPew":
+                break;
+            case "Wall":
+                break;
+        }
     }
+
+
 });
