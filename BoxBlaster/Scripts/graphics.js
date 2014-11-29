@@ -9,6 +9,7 @@
     //document.getElementById('wrapperDiv').addEventListener("keyup", keyup);
 
     var targetFPS = 25;
+    var collisionThreshold = 100;
     //window.onresize = windowresize;
 
 
@@ -54,6 +55,27 @@
                 endpoint.x += this.magnitude * Math.cos(this.direction);
                 return endpoint;
             }
+
+            // get the reflected vector based on the relative cardinal direction 
+            this.GetReflectedOffDirection = function (cardDir) {
+                var reflection = new Vector(this.magnitude, 0);
+                switch (cardDir) {
+                    case "N":
+                        reflection.direction = -this.direction;
+                        break;
+                    case "S":
+                        reflection.direction = -this.direction;
+                        break;
+                    case "E":
+                        reflection.direction = Math.PI + this.direction;
+                        break;
+                    case "W":
+                        reflection.direction = Math.PI - this.direction;
+                        break;
+                }
+
+                return reflection;
+            }
         }
 
         return Vector;
@@ -76,27 +98,61 @@
             this.move_S = false,
             this.move_W = false,
             this.move_E = false;
-            this.speed = 125 / targetFPS;
+            this.speed = Math.ceil(125 / targetFPS);
             this.color = "blue";
             this.aim_color = "red";
             this.text_color = "white";
+            this.isDead = false;
+            this.milsToRespawn = 5000;
+            this.lastTOD = new Date();
             this.DrawToCanvasContext = function (ctx) {
-                //draw rectangle
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                if (this.isDead && ((new Date() - this.lastTOD) > this.milsToRespawn)) {
+                    this.respawn();
+                    return;
+                }
 
-                //draw aim
-                ctx.beginPath()
-                ctx.moveTo(this.x, this.y);
-                ctx.lineTo(this.aim_x, this.aim_y);
-                ctx.strokeStyle = this.aim_color;
-                ctx.stroke();
+                if (!this.isDead) {
+                    //execute this code if player is alive
 
-                //add name
-                ctx.fillStyle = this.text_color;
-                ctx.fillText(this.name, this.x - this.width / 2, this.y - this.height / 4, this.width);
+                    //draw rectangle
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
 
+                    //draw aim
+                    ctx.beginPath()
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.aim_x, this.aim_y);
+                    ctx.strokeStyle = this.aim_color;
+                    ctx.stroke();
+
+                    //add name
+                    ctx.fillStyle = this.text_color;
+                    ctx.fillText(this.name, this.x - this.width / 2, this.y - this.height / 4, this.width);
+                }
+                else {
+                    //draw rectangle
+                    ctx.fillStyle = "grey";
+                    ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+
+                    //add dead emoticon
+                    ctx.fillStyle = "yellow";
+                    ctx.fillText("X(", this.x - this.width / 2, this.y - this.height / 4, this.width);
+
+                    //add dead emoticon
+                    ctx.fillStyle = "yellow";
+                    ctx.fillText("X(", this.x, this.y, this.width);
+
+                    //add countdown
+                    var counter = Math.ceil((this.milsToRespawn - (new Date() - this.lastTOD)) / 1000);
+                    ctx.fillText(counter, this.x, this.y, this.width);
+
+                }
             };
+
+            this.respawn = function () {
+                this.isDead = false;
+                console.log(this.name + " respawned!");
+            }
 
             this.GetLineSegments = function () {
                 var topY = this.y - this.height / 2;
@@ -119,16 +175,23 @@
             }
 
             this.MoveMe = function () {
-                if (this.move_N)
+                if (this.move_N) {
                     this.y -= this.speed;
-                if (this.move_S)
+                    checkForCollisions(this);
+                }
+                if (this.move_S){
                     this.y += this.speed;
-                if (this.move_W)
+                    checkForCollisions(this);
+                }
+                if (this.move_W){
                     this.x -= this.speed;
-                if (this.move_E)
+                    checkForCollisions(this);
+                }
+                if (this.move_E){
                     this.x += this.speed;
+                    checkForCollisions(this);
+                }
 
-                checkForCollisions(this);
             };
 
             this.firePew = function () {
@@ -144,7 +207,7 @@
 
             // what happens when this box hits something
             this.handleCollision = function (objHit) {
-
+                console.log("Handling Box Collision!");
                 //determine direction of hit
                 var direction = relativeCardinalDirection(this, objHit);
 
@@ -159,6 +222,11 @@
                         moveAdjacent(this, objHit, direction);
                         break;
                 }
+            }
+
+            this.die = function (pewpew) {
+                this.milsToRespawn = 5000;
+                this.isDead = true;
             }
         }
 
@@ -302,30 +370,49 @@
             this.handleCollision = function (objHit) {
                 switch (objHit.type) {
                     case "Box": //pewpew disappears, box dies
-                        this.remove();
+                        removeObjectFromArray(PewPews, this);
                         objHid.die(this);
                         break;
                     case "PewPew": //both pewpews explode!
-                        //calculate reflector vectors for both pewpews
-                        //
-                        //
-                        //
-                        //
+                        //calculate hit direction for both pewpews
+                        var thisHitDir = relativeCardinalDirection(this, objHit);
+                        var thatHitDir = getOppositeCardinalDirection(thisHitDir);
 
-                        this.explode(thisref);
-                        objHit.explode(thatref);
+                        //calculate reflected vectors
+                        var thisRefVec = this.vector.GetReflectedOffDirection(thisHitDir);
+                        var thatRefVec = objHit.vector.GetReflectedOffDirection(thatHitDir);
+
+                        //calculate spread
+                        var thisSpread = Math.abs(Math.abs(thisRefVec.direction) - Math.PI / 2);
+                        var thatSpread = Math.abs(Math.abs(thatRefVec.direction) - Math.PI / 2);
+
+                        //calculate average x and y
+                        var exp_x = (this.x + objHit.x) / 2;
+                        var exp_y = (this.y + objHit.y) / 2;
+
+                        //spawn the explosions
+                        Explosions.push(new Explosion(thisRefVec, thisRefVec, exp_x, exp_y));
+                        Explosions.push(new Explosion(thatRefVec, thatRefVec, exp_x, exp_y));
+
+                        //remove the pewpews from the collection
                         removeObjectFromArray(PewPews, this);
                         removeObjectFromArray(PewPews, objHit);
                         break;
                     case "Wall": //pewpew exlodes!
-                        //calculate reflector vectors for both pewpews
-                        //
-                        //
-                        //
-                        //
-                        this.explode(thisref);
-                        removeObjectFromArray(PewPews, this);
+                        //calculate hit direction for both pewpews
+                        var thisHitDir = relativeCardinalDirection(this, objHit);
 
+                        //calculate reflected vectors
+                        var thisRefVec = this.vector.GetReflectedOffDirection(thisHitDir);
+
+                        //calculate spread
+                        var thisSpread = Math.abs(Math.abs(thisRefVec.direction) - Math.PI / 2);
+
+                        //spawn the explosions
+                        Explosions.push(new Explosion(thisRefVec, thisRefVec, this.x, this.y));
+
+                        //remove the pewpews from the collection
+                        removeObjectFromArray(PewPews, this);
                         break;
                 }
             }
@@ -335,33 +422,56 @@
         return PewPew;
     })();
 
+    function getOppositeCardinalDirection(direction) {
+        var oppDir = "";
+        switch (cardDir) {
+            case "N":
+                oppDir = "S";
+                break;
+            case "S":
+                oppDir = "N";
+                break;
+            case "E":
+                oppDir = "W";
+                break;
+            case "W":
+                oppDir = "E";
+                break;
+        }
+
+        return oppDir;
+    }
 
     var Explosion = (function () {
         function Explosion(vector, spread, x, y) {
+            this.id = Math.floor((1 + Math.random()) * 0x10000).toString(16);
             this.type = "Explosion";
             this.frame = 0;
-            this.x = 0;
-            this.y = 0;
-            this.particles = [new Vector()];
-            //this.particles = CreateParticleArray(vector, spread);
-            
+            this.maxFrames = 5;
+            this.x = x;
+            this.y = y;
+            this.particles = CreateParticleArray(vector || new Vector(), spread || Math.PI * 2);
+
             //draw this explosion to the context
             this.DrawToCanvasContext = function (ctx) {
                 this.frame++;
 
-
+                if (this.frame > this.maxFrames) {
+                    removeObjectFromArray(Explosions, this);
+                    return;
+                }
 
                 var thisx = this.x;
                 var thisy = this.y;
 
                 this.particles.forEach(function (particle) {
-                    
+
                     var baseMag = particle.magnitude;
                     var frameMag;
-                    if(this.frame == 1)
+                    if (this.frame == 1)
                         frameMag = Math.ceil(0.2 * baseMag);
                     else
-                        frameMag = baseMag - baseMag/this.frame;
+                        frameMag = baseMag - baseMag / this.frame;
 
                     var endpoint = new Vector(frameMag, particle.direction).GetRelativeEndPoint();
 
@@ -447,6 +557,8 @@
 
     var Boxes = new Array();
     var PewPews = new Array();
+    var Explosions = new Array();
+    var Walls = new Array();
 
     var counter = 0;
     var lastMessageTime = new Date();
@@ -622,6 +734,9 @@
         PewPews.forEach(function (item) {
             item.DrawToCanvasContext(tctx);
         });
+        Explosions.forEach(function (item) {
+            item.DrawToCanvasContext(tctx);
+        });
 
 
         MyBox.DrawToCanvasContext(tctx);
@@ -667,8 +782,7 @@
     var audioDaemon = window.setInterval(playaudio, 300);
 
     //stackoverflow.com/questions/5767325/remove-specific-element-from-an-array
-    function removeObjectFromArray(array, obj)
-    {
+    function removeObjectFromArray(array, obj) {
         var index = arrayObjectIndexOf(array, obj.id, "id");
         if (index > -1) {
             array.splice(index, 1);
@@ -687,8 +801,8 @@
     //www.geeksforgeeks.org/check-if-two-given-line-segments-intersect
     // checks if colinear points are on a given lines segment
     function onSegment(p, q, r) {
-        if (q.x <= Math.max(p.x, r.x) && q.x >= min(p.x, r.x) &&
-            q.y <= Math.max(p.y, r.y) && q.y >= min(p.y, r.y))
+        if (q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) &&
+            q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y))
             return true;
 
         return false;
@@ -735,14 +849,80 @@
 
     function checkForCollisions(obj) {
         switch (obj.type) {
-            case "Box":
+            case "Box": //boxes can collide with other boxes and walls
+                //check if there are box centers within 100 pixels
+                // if it's too slow I'll optimize, for now check everyone
+                Boxes.forEach(function (box) {
+                    if (box.id != obj.id)
+                        if (doObjectsIntersect(box, obj))
+                            obj.handleCollision(box);
+                });
+                if (Walls != null)
+                    Walls.forEach(function (wall) {
+                        if (doObjectsIntersect(wall, obj))
+                            obj.handleCollision(wall);
+                    });
                 break;
-            case "PewPew":
+            case "PewPew": //pewpews can collide with walls, boxes, and other pewpews
+                Boxes.forEach(function (box) {
+                    if (doObjectsIntersect(box, obj))
+                        obj.handleCollision(box);
+                });
+                if (Walls != null)
+                    Walls.forEach(function (wall) {
+                        if (doObjectsIntersect(wall, obj))
+                            obj.handleCollision(wall);
+                    });
+                if (PewPews != null)
+                    PewPews.forEach(function (pew) {
+                        if (pew.id != obj.id)
+                            if (doObjectsIntersect(pew, obj))
+                                obj.handleCollision(pew);
+                    });
                 break;
-            case "Wall":
+            case "Wall": //walls can collide with other walls or with boxes
+                Boxes.forEach(function (box) {
+                    if (doObjectsIntersect(box, obj))
+                        obj.handleCollision(box);
+                });
+                if (Walls != null)
+                    Walls.forEach(function (wall) {
+                        if (wall.id != obj.id)
+                            if (doObjectsIntersect(wall, obj))
+                                obj.handleCollision(wall);
+                    });
                 break;
         }
     }
 
+    function doObjectsIntersect(obj1, obj2) {
+        // if distance is greater than 50, ignore
+        var deltaX = obj1.x - obj2.x;
+        var deltaY = obj1.y - obj2.y;
 
+        var dist = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+        if (dist > collisionThreshold)
+            return false;
+
+        var segments1 = obj1.GetLineSegments();
+        var segments2 = obj2.GetLineSegments();
+
+        //console.log("Checking object intersection");
+
+        segments1.forEach(function (segment1) {
+            segments2.forEach(function (segment2) {
+                //console.log("Segment1: ");
+                //console.log(segment1);
+                //console.log("Segment2: ");
+                //console.log(segment2);
+                if (doIntersect(segment1, segment2))
+                    return true;
+            });
+        });
+
+        return false;
+    }
+
+
+    console.log(MyBox.GetLineSegments());
 });
