@@ -39,7 +39,7 @@
 #menuDiv{
     display: inline-block; 
     width: 150px; 
-    height: 300px; 
+    height: 450px; 
     border: solid black 1px;
     vertical-align: top;
     padding: 0px 10px;
@@ -61,9 +61,20 @@ h1{
     display: inline-block;
 }
 
-h2, p {
+h2, p, label{
     margin: 5px 0px;
     text-shadow: 0px 0px 8px orange;
+}
+
+#volumeLabel {
+    width: 35%;
+    display: inline-block;
+}
+
+#volumeSlider {
+    width: 55%;
+    display: inline-block;
+    height: 16px;
 }
 
 #leaderBoard, #volumeControl{

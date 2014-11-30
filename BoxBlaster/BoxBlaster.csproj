@@ -65,8 +65,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Audio\pew.mp3" />
+    <Content Include="Audio\Boom.mp3" />
     <Content Include="Audio\pew.wav" />
+    <Content Include="Audio\splat_clip.wav" />
     <Content Include="Default.html" />
     <Content Include="Iframe.html" />
     <Content Include="packages.config" />

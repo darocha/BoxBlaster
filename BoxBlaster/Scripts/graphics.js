@@ -5,11 +5,17 @@
     document.addEventListener("keydown", keydown);
     document.addEventListener("keyup", keyup);
 
-    //document.getElementById('wrapperDiv').addEventListener("keydown", keydown);
-    //document.getElementById('wrapperDiv').addEventListener("keyup", keyup);
+    
+    document.getElementById('volumeSlider').addEventListener("input", adjustVolume);
 
+    function adjustVolume() {
+        masterVolume = document.getElementById('volumeSlider').value;
+    }
+
+    var masterVolume = 1;
     var targetFPS = 25;
     var collisionThreshold = 100;
+    
     //window.onresize = windowresize;
 
 
@@ -94,6 +100,7 @@
             this.playPew = false;
             this.aim_x = 0;
             this.aim_y = 0;
+            this.renderAim = true;
             this.move_N = false,
             this.move_S = false,
             this.move_W = false,
@@ -118,12 +125,14 @@
                     ctx.fillStyle = this.color;
                     ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
 
-                    //draw aim
-                    ctx.beginPath()
-                    ctx.moveTo(this.x, this.y);
-                    ctx.lineTo(this.aim_x, this.aim_y);
-                    ctx.strokeStyle = this.aim_color;
-                    ctx.stroke();
+                    //draw aim, if enabled
+                    if (this.renderAim) {
+                        ctx.beginPath()
+                        ctx.moveTo(this.x, this.y);
+                        ctx.lineTo(this.aim_x, this.aim_y);
+                        ctx.strokeStyle = this.aim_color;
+                        ctx.stroke();
+                    }
 
                     //add name
                     ctx.fillStyle = this.text_color;
@@ -147,6 +156,49 @@
 
             this.respawn = function () {
                 this.isDead = false;
+
+                var collisions = true;
+                var count = 0;
+
+                while (collisions && count < 10) {
+                    // based on hard coded 600 x 450 playfield
+                    var switchVar = randomBetween(1, 4).toString();
+                    console.log(switchVar);
+                    switch (switchVar) {
+                        case "1":
+                            // top row
+                            //console.log("top");
+                            this.x = Math.floor(510 * Math.random() + 45);
+                            this.y = 15;
+                            break;
+                        case "2":
+                            // bottom row
+                            //console.log("bottom");
+                            this.x = Math.floor(510 * Math.random() + 45);
+                            this.y = 435;
+                            break;
+                        case "3":
+                            // left side
+                            //console.log("left");
+                            this.x = 15;
+                            this.y = Math.floor(360 * Math.random() + 45);
+                            break;
+                        case "4":
+                            // right side
+                            //console.log("right");
+                            this.x = 585;
+                            this.y = Math.floor(360 * Math.random() + 45);
+                            break;
+                        default:
+                            // something got screwed up, put it anywhere...
+                            //console.log("DEFAULT");
+                            this.x = Math.floor(510 * Math.random() + 45);
+                            this.y = Math.floor(360 * Math.random() + 45);
+                            break;
+                    }
+                    collisions = checkForSpawnCollisions(PlayWall);
+                    count++;
+                }
                 //console.log(this.name + " respawned!");
             }
 
@@ -202,6 +254,7 @@
                 pewBox.x = this.x;
                 pewBox.y = this.y;
                 pewBox.MoveMe();
+                pewBox.PEW();
                 PewPews.push(pewBox);
             };
 
@@ -395,9 +448,14 @@
                         var exp_x = (this.x + objHit.x) / 2;
                         var exp_y = (this.y + objHit.y) / 2;
 
-                        //spawn the explosions
-                        Explosions.push(new Explosion(thisRefVec, thisRefVec, exp_x, exp_y));
-                        Explosions.push(new Explosion(thatRefVec, thatRefVec, exp_x, exp_y));
+                        //create explosions, play first BOOM
+                        var explosion1 = new Explosion(thisRefVec, thisRefVec, exp_x, exp_y);
+                        var explosion2 = new Explosion(thatRefVec, thatRefVec, exp_x, exp_y);
+                        explosion1.BOOM();
+
+                        //animate explosions
+                        Explosions.push(explosion1);
+                        Explosions.push(explosion2);
 
                         //remove the pewpews from the collection
                         removeObjectFromArray(PewPews, this);
@@ -414,8 +472,12 @@
                         //calculate spread
                         var thisSpread = Math.abs(Math.abs(thisRefVec.direction) - Math.PI / 2);
 
+                        //create explosion, play BOOM
+                        var explosion = new Explosion(thisRefVec, thisRefVec, this.x, this.y);
+                        explosion.BOOM();
+
                         //spawn the explosions
-                        Explosions.push(new Explosion(thisRefVec, thisRefVec, this.x, this.y));
+                        Explosions.push(explosion);
 
                         //remove the pewpews from the collection
                         removeObjectFromArray(PewPews, this);
@@ -423,10 +485,44 @@
                 }
             }
 
+            // play the pewpew sound
+            this.PEW = function () {
+                var pew = new Audio("Audio/pew.wav");
+                //this is loud and annoying, the .75 makes it a bit less so
+                pew.volume = getVolumeFactor(MyBox, this) * .75; 
+                pew.volume *= masterVolume;
+                pew.play();
+            }
+
+            // play the pewpew sound
+            this.SPLAT = function () {
+                var splat = new Audio("Audio/splat_clip.wav");
+                splat.volume = getVolumeFactor(MyBox, this);
+                splat.volume *= masterVolume;
+                splat.play();
+            }
+
         }
 
         return PewPew;
     })();
+
+    //finds volume adjustment factor based on distance between two objects
+    function getVolumeFactor(origin, target)
+    {
+        var deltaX = origin.x - target.x;
+        var deltaY = origin.y - target.y;
+
+        var dist = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+        var factor = (maxDist - dist) / maxDist;
+
+        if (factor > 1)
+            return 1;
+        if (factor < 0)
+            return 0;
+        return factor;
+
+    }
 
     function getOppositeCardinalDirection(direction) {
         var oppDir = "";
@@ -478,16 +574,13 @@
 
                 // create radial gradient
                 var grd = ctx.createRadialGradient(centerX, centerY, radius / 5, centerX, centerY, radius * 1.25);
-                // light blue
                 grd.addColorStop(0, 'yellow');
-                // dark blue
                 grd.addColorStop(1, 'red');
 
                 ctx.fillStyle = grd;
-
-                //context.fillStyle = 'green';
                 ctx.fill();
 
+                // This Particle stuff didn't work right and the radial explosions look good...
                 //var thisx = this.x;
                 //var thisy = this.y;
 
@@ -511,34 +604,44 @@
 
             };
 
+
             /// <returns type='Array' elementType='Vector'>Array of vectors</returns>
-            var CreateParticleArray = function (vec, spr) {
-                var particles = new Array();
-                var partCount = randomBetween(4, 8) // random number between 4 and 8, inclusive
-                var minDirection = vec.direction - spr / 2;
-                var maxDirection = vec.direction + spr / 2;
+            //var CreateParticleArray = function (vec, spr) {
+            //    var particles = new Array();
+            //    var partCount = randomBetween(4, 8) // random number between 4 and 8, inclusive
+            //    var minDirection = vec.direction - spr / 2;
+            //    var maxDirection = vec.direction + spr / 2;
 
-                particles.push(new Vector(randomBetween(8, 15), minDirection));
-                particles.push(new Vector(randomBetween(8, 15), maxDirection));
+            //    particles.push(new Vector(randomBetween(8, 15), minDirection));
+            //    particles.push(new Vector(randomBetween(8, 15), maxDirection));
 
-                for (var i = 0; i < partCount - 2; i++) {
-                    var dir = randomBetween(minDirection * 10000, maxDirection * 10000) / 10000;
-                    particles.push(new Vector(randomBetween(8, 15), dir));
-                }
+            //    for (var i = 0; i < partCount - 2; i++) {
+            //        var dir = randomBetween(minDirection * 10000, maxDirection * 10000) / 10000;
+            //        particles.push(new Vector(randomBetween(8, 15), dir));
+            //    }
 
-                return particles;
+            //    return particles;
+            //}
+            //this.particles = CreateParticleArray(vector || new Vector(), spread || Math.PI * 2);
+
+
+            // play the explosion sound
+            this.BOOM = function () {
+                var boom = new Audio("Audio/Boom.mp3");
+                boom.volume = getVolumeFactor(MyBox, this);
+                boom.volume *= masterVolume;
+                boom.play();
             }
-
-            this.particles = CreateParticleArray(vector || new Vector(), spread || Math.PI * 2);
         }
 
         return Explosion;
     })();
 
+    // return a random integer between two numbers
     function randomBetween(min, max, inc) {
         var _inc = inc || true;
         var _min = min;
-        var _max = _max;
+        var _max = max;
         if (_inc)
             _max++;
         return Math.floor(Math.random() * (_max - _min)) + _min;
@@ -602,32 +705,14 @@
 
     var MyBox = new Box();
 
-    //   for (var i = 0; i < 20; i++) {
-    //        var TestBox = new Box();
-    //        TestBox.aim_color = "yellow";
-    //        TestBox.color = "purple";
-    //        TestBox.id = i;
-    //        TestBox.name = "Test" + i;
-    //        TestBox.x = 600 * Math.random();
-    //        TestBox.y = 300 * Math.random();
-    //        TestBox.die();
-    //        Boxes.push(TestBox);
-    //    }
 
-    //Add walls to the playfield
-    for (var i = 0; i < 10; i++) {
-        var TestBox = new Wall();
-        TestBox.x = 600 * Math.random();
-        TestBox.y = 300 * Math.random();
-        Walls.push(TestBox);
-    }
 
     //create the side boundaries
     var x1 = -15;
     //var x2 = -15;
     var x3 = 615;
     //var x4 = 645;
-    for (var i = 0; i < (300 / 30) + 2; i++) {
+    for (var i = 0; i < (450 / 30) + 2; i++) {
         var wall1 = new Wall();
         wall1.x = x1;
         wall1.y = -45 + i * 30;
@@ -654,11 +739,11 @@
     //create the top and bottom boundaries
     var y1 = -15;
     //var y2 = -15;
-    var y3 = 315;
+    var y3 = 465;
     //var y4 = 345;
     for (var i = 0; i < (600 / 30) ; i++) {
         var wall1 = new Wall();
-        wall1.x = -45 + i * 30;
+        wall1.x = 15 + i * 30;
         wall1.y = y1;
         wall1.MoveMe = function () { };
         Walls.push(wall1);
@@ -669,7 +754,7 @@
         //Walls.push(wall2);
 
         var wall3 = new Wall();
-        wall3.x = -45 + i * 30;
+        wall3.x = 15 + i * 30;
         wall3.y = y3;
         wall3.MoveMe = function () { };
         Walls.push(wall3);
@@ -680,9 +765,41 @@
         //Walls.push(wall4);
     }
 
+    //Add walls to the playfield
+    for (var i = 0; i < 20; i++) {
+        var PlayWall = new Wall();
+        var collisions = true;
+        var count = 0;
+
+        while (collisions && count < 10) {
+            PlayWall.x = Math.floor(510 * Math.random() + 45);
+            PlayWall.y = Math.floor(360 * Math.random() + 45);
+            collisions = checkForSpawnCollisions(PlayWall);
+            count++;
+        }
+
+        //console.log("Count for box " + i + ": " + count);
+        Walls.push(PlayWall);
+    }
+
+
+    //Add dummy playerboxes for testing
+    for (var i = 0; i < 5; i++) {
+        var test = new Box();
+        test.color = "purple";
+        test.text_color = "yellow";
+        test.name = "TEST" + i;
+        test.renderAim = false;
+        test.respawn();
+
+        //console.log("Count for box " + i + ": " + count);
+        Walls.push(test);
+    }
+
+
     var tempCanvas = document.createElement("canvas");
     var drawCanvas = document.getElementById("canvas");
-    drawCanvas.height = 300;//window.innerHeight;
+    drawCanvas.height = 450;//window.innerHeight;
     drawCanvas.width = 600;//window.innerWidth;
 
     var maxDist = Math.sqrt(Math.pow(drawCanvas.height, 2) + Math.pow(drawCanvas.width, 2));
@@ -800,7 +917,7 @@
         //pew.volume = (maxDist - dist) / maxDist;
         //pew.play();
 
-        playaudio();
+        //playaudio();
 
         //event.preventDefault();
         //event.stopPropagation();
@@ -990,6 +1107,42 @@
                 break;
         }
     }
+
+    function checkForSpawnCollisions(obj) {
+        var collision = false;
+        //console.log(obj.type);
+        switch (obj.type) {
+            case "Box": //boxes can collide with other boxes and walls
+                //console.log("checking for box collision!");
+                Boxes.forEach(function (box) {
+                    if (doObjectsIntersect(box, obj))
+                        collision = true;
+                });
+
+                Walls.forEach(function (wall) {
+                    if (doObjectsIntersect(wall, obj))
+                        collision = true;
+                });
+                break;
+            case "Wall": //walls can collide with other walls or with boxes
+                //Boxes.forEach(function (box) {
+                //    if (doObjectsIntersect(box, obj))
+                //        collision = true;
+                //});
+
+                Walls.forEach(function (wall) {
+                    if (doObjectsIntersect(wall, obj)) {
+                        collision = true;
+                        //console.log(wall);
+                    }
+                });
+                break;
+        }
+
+        return collision;
+    }
+
+
 
     function doObjectsIntersect(obj1, obj2) {
         // if distance is greater than 50, ignore
