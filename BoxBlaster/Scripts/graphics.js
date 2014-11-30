@@ -9,6 +9,7 @@
     document.getElementById('volumeSlider').addEventListener("input", adjustVolume);
     document.getElementById('laserToggle').addEventListener("change", toggleLaser);
 
+
     function adjustVolume() {
         masterVolume = document.getElementById('volumeSlider').value;
     }
@@ -337,6 +338,7 @@
             this.height = 30;
             this.color = "black";
             this.speed = Math.ceil(25 / targetFPS);
+            this.isBoundary = false;
 
             //draw this wall to the context
             this.DrawToCanvasContext = function (ctx) {
@@ -527,6 +529,16 @@
                         removeObjectFromArray(PewPews, this);
                         break;
                 }
+            }
+
+            // make this pewpew explode
+            this.Explode = function () {
+
+                //create a new explosion
+                var explosion = new Explosion(new Vector(), new Vector(), this.x, this.y);
+                explosion.BOOM();
+                Explosions.push(explosion);
+                removeObjectFromArray(PewPews, this);
             }
 
             // play the pewpew sound
@@ -759,6 +771,9 @@
         var wall1 = new Wall();
         wall1.x = x1;
         wall1.y = -45 + i * 30;
+        wall1.width = 30;
+        wall1.height = 30;
+        wall1.isBoundary = true;
         wall1.MoveMe = function () { };
         Walls.push(wall1);
 
@@ -770,6 +785,9 @@
         var wall3 = new Wall();
         wall3.x = x3;
         wall3.y = -45 + i * 30;
+        wall3.width = 30;
+        wall3.height = 30;
+        wall3.isBoundary = true;
         wall3.MoveMe = function () { };
         Walls.push(wall3);
 
@@ -788,6 +806,9 @@
         var wall1 = new Wall();
         wall1.x = 15 + i * 30;
         wall1.y = y1;
+        wall1.width = 30;
+        wall1.height = 30;
+        wall1.isBoundary = true;
         wall1.MoveMe = function () { };
         Walls.push(wall1);
 
@@ -799,6 +820,9 @@
         var wall3 = new Wall();
         wall3.x = 15 + i * 30;
         wall3.y = y3;
+        wall3.width = 30;
+        wall3.height = 30;
+        wall3.isBoundary = true;
         wall3.MoveMe = function () { };
         Walls.push(wall3);
 
@@ -1431,4 +1455,44 @@
         return h2;
     }
 
+    ////////////////////////////////////////////////
+    //
+    // BEGIN SIGNALR STUFF
+    //
+    //
+    ////////////////////////////////////////////////
+
+    var hub = $.connection.blasterHub;
+
+    hub.client.playerKilled = function (killerId, victimId) {
+
+    };
+
+    hub.client.playerMoved = function (playerId, x, y) {
+
+    };
+
+    hub.client.playerLeft = function (id) {
+
+    };
+
+    hub.client.playerJoined = function (id, x, y) {
+
+    };
+
+    hub.client.wallMoved = function (id, x, y) {
+
+    };
+
+    hub.client.wallAdded = function (id, x, y) {
+
+    };
+
+    hub.client.wallRemoved = function (id) {
+
+    };
+
+    $.connection.hub.start().done(function (MyBox) {
+
+    });
 });
