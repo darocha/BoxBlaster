@@ -17,13 +17,17 @@
             </div>
             <div id="menuDiv">
                 <h2>MENU</h2>
-                <div id="volumeControl">
+                <div class="control" id="volumeControl">
                     <label>Volume:</label>
                     <input type="range" min="0" max="1" step="0.05" id="volumeSlider" value="1"/>
                 </div>
-                <div id="colorControl">
+                <div class="control" id="colorControl">
                     <label>Color:</label>
                     <input type="color" value="#0000FF" id="colorPicker" />
+                </div>
+                <div class="control" id="laserControl">
+                    <label>Enable Laser Aim:</label>
+                    <input type="checkbox" checked id="laserToggle" />
                 </div>
                 <div id="leaderBoard">
                     <p>Leaderboard:</p>

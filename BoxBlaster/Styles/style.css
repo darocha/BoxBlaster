@@ -67,17 +67,27 @@ h2, p, label{
 }
 
 label {
-    width: 35%;
+    /*width: 35%;*/
     display: inline-block;
+}
+
+input{
+    float: right;
+    display: inline-block;
+    height: 16px;
+    vertical-align: baseline;
 }
 
 #volumeSlider, #colorPicker {
     width: 55%;
-    display: inline-block;
-    height: 16px;
 }
 
-#leaderBoard, #volumeControl{
+#laserToggle {
+    width: 15%;
+    margin-top: 5px;
+}
+
+#leaderBoard, .control{
     font-size: 11pt;
 }
 

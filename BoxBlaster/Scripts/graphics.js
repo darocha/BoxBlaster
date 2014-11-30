@@ -7,6 +7,7 @@
 
     document.getElementById('colorPicker').addEventListener("input", changeColor);
     document.getElementById('volumeSlider').addEventListener("input", adjustVolume);
+    document.getElementById('laserToggle').addEventListener("change", toggleLaser);
 
     function adjustVolume() {
         masterVolume = document.getElementById('volumeSlider').value;
@@ -15,6 +16,10 @@
     function changeColor() {
         MyBox.color = document.getElementById('colorPicker').value;
         MyBox.text_color = getComplementaryColor(MyBox.color);
+    }
+
+    function toggleLaser() {
+        MyBox.renderAim = document.getElementById("laserToggle").checked;
     }
 
     var masterVolume = 1;
@@ -128,10 +133,21 @@
 
                 if (!this.isDead) {
                     //execute this code if player is alive
+                    
 
                     //draw rectangle
                     ctx.fillStyle = this.color;
                     ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+
+                    //draw outline
+                    ctx.beginPath()
+                    ctx.moveTo(this.x - this.width / 2, this.y - this.height / 2);
+                    ctx.lineTo(this.x + this.width / 2, this.y - this.height / 2);
+                    ctx.lineTo(this.x + this.width / 2, this.y + this.height / 2);
+                    ctx.lineTo(this.x - this.width / 2, this.y + this.height / 2);
+                    ctx.lineTo(this.x - this.width / 2, this.y - this.height / 2);
+                    ctx.strokeStyle = "black";
+                    ctx.stroke();
 
                     //draw aim, if enabled
                     if (this.renderAim) {
@@ -168,30 +184,30 @@
                 var collisions = true;
                 var count = 0;
 
-                while (collisions && count < 20) {
+                while (collisions && count < 10) {
                     // based on hard coded 600 x 450 playfield
-                    var switchVar = randomBetween(1, 4).toString();
+                    var switchVar = randomBetween(1, 4);
                     //console.log(switchVar);
                     switch (switchVar) {
-                        case "1":
+                        case 1:
                             // top row
                             //console.log("top");
                             this.x = randomBetween(this.width / 2 + 1, 599 - this.width / 2);//Math.floor((600 - 3 * this.width) * Math.random() + this.width * 1.5);
                             this.y = this.width / 2 + 1;
                             break;
-                        case "2":
+                        case 2:
                             // bottom row
                             //console.log("bottom");
                             this.x = randomBetween(this.width / 2 + 1, 599 - this.width / 2);//Math.floor((600 - 3 * this.width) * Math.random() + this.width * 1.5);
                             this.y = 450 - this.width / 2 - 1;
                             break;
-                        case "3":
+                        case 3:
                             // left side
                             //console.log("left");
                             this.x = this.width / 2 + 1;
                             this.y = randomBetween(this.height / 2 + 1, 449 - this.height / 2); //Math.floor(360 * Math.random() + 45);
                             break;
-                        case "4":
+                        case 4:
                             // right side
                             //console.log("right");
                             this.x = 600 - this.width / 2 - 1;
@@ -200,16 +216,16 @@
                         default:
                             // something got screwed up, put it anywhere...
                             //console.log("DEFAULT");
-                            this.x = Math.floor(480 * Math.random() + 60);
-                            this.y = Math.floor(330 * Math.random() + 60);
+                            this.x = Math.floor(558 * Math.random() + 21);
+                            this.y = Math.floor(408 * Math.random() + 21);
                             break;
                     }
 
                     //help collision detection
-                    this.x += Math.random() / 2.01;
-                    this.y += Math.random() / 2.01;
+                    //this.x += Math.random() / 2.01;
+                    //this.y += Math.random() / 2.01;
 
-                    collisions = checkForSpawnCollisions(PlayWall);
+                    collisions = checkForSpawnCollisions(this);
                     count++;
                 }
                 console.log(this.name + " respawned! Took " + count + " tries!");
@@ -260,6 +276,10 @@
             };
 
             this.firePew = function () {
+
+                //selective loggin
+                console.log(this.text_color);
+
                 var vector = new Vector(375 / targetFPS, 0);
                 vector.SetDirectionFromPoints(new Point(this.x, this.y), new Point(this.aim_x, this.aim_y));
                 var pewBox = new PewPew(vector);
@@ -443,12 +463,17 @@
             this.handleCollision = function (objHit) {
                 switch (objHit.type) {
                     case "Box": //pewpew disappears, box dies
-                        removeObjectFromArray(PewPews, this);
-                        objHit.die(this);
+                        removeObjectFromArray(PewPews, this);                  
                         this.SPLAT();
-                        var killer = getObjectFromArray(Boxes, this.sourceId);
-                        killer.kills++;
-                        updatePlayerOnLeaderboard(killer);
+
+                        //if the target box was alive, kill it and record the kill
+                        //nice shootin tex!
+                        if (!objHit.isDead) {
+                            objHit.die(this);
+                            var killer = getObjectFromArray(Boxes, this.sourceId);
+                            killer.kills++;
+                            updatePlayerOnLeaderboard(killer);
+                        }
                         break;
                     case "PewPew": //both pewpews explode!
                         //calculate hit direction for both pewpews
@@ -1013,7 +1038,7 @@
 
     var renderHandle = window.setInterval(render, 1000 / targetFPS);
     var moveDaemon = window.setInterval(movebox, 1000 / targetFPS);
-    var audioDaemon = window.setInterval(playaudio, 300);
+    var audioDaemon = window.setInterval(playaudio, 400);
 
     //stackoverflow.com/questions/5767325/remove-specific-element-from-an-array
     function removeObjectFromArray(array, obj) {
@@ -1204,7 +1229,12 @@
     function CreateSelf() {
         //MyBox = new Box();
         MyId = MyBox.id;
-        MyBox.name = prompt("Please Enter your nickname (~8 characters or so)");
+        MyBox.name = "";
+
+        //Get player nickname
+        while (MyBox.name.length < 4 || MyBox.name.length > 8)
+            MyBox.name = prompt("Please Enter your nickname (4 to 8 characters)").toUpperCase();
+
         MyBox.respawn();
         addPlayerToLeaderboard(MyBox);
         //console.log(MyBox.id);
@@ -1341,23 +1371,34 @@
     function getComplementaryColor(hexColor) {
         console.log(hexColor);
         // parce out the individual hex values
-        var r = hexColor.substring(1, 2);
-        var g = hexColor.substring(3, 4);
-        var b = hexColor.substring(5, 6);
+        var r = hexColor.substring(1, 3);
+        var g = hexColor.substring(3, 5);
+        var b = hexColor.substring(5);
 
+        console.log(r + " " + g + " " + b);
         //convert hex values to decimal
         r = parseInt(r, 16);
         g = parseInt(g, 16);
         b = parseInt(b, 16);
 
+        //special case: if all are equal, greyscale, use black or white
+        if (r == g && g == b) {
+            if (r < 255 / 2)
+                return "#ffffff";
+            else
+                return "#000000";
+
+        }
+
         // get hsl representation
+        console.log(r + " " + g + " " + b);
         var hsl = rgbToHsl(r, g, b);
 
         console.log(hsl);
 
         // invert hue
         hsl[0] = invertHue(hsl[0]);
-        hsl[1] = Math.abs(1 - hsl[1]);
+        //hsl[1] = Math.abs(1 - hsl[1]);
         hsl[2] = Math.abs(1 - hsl[2]);
 
         console.log(hsl);
@@ -1368,6 +1409,15 @@
         r = rgb[0].toString(16);
         g = rgb[1].toString(16);
         b = rgb[2].toString(16);
+
+        if (r.length == 1)
+            r = "0" + r;
+        if (g.length == 1)
+            g = "0" + g;
+        if (b.length == 1)
+            b = "0" + b;
+
+        console.log(r + " " + g + " " + b);
 
         return "#" + r + g + b;
     }
