@@ -5,17 +5,23 @@
     document.addEventListener("keydown", keydown);
     document.addEventListener("keyup", keyup);
 
-    
+    document.getElementById('colorPicker').addEventListener("input", changeColor);
     document.getElementById('volumeSlider').addEventListener("input", adjustVolume);
 
     function adjustVolume() {
         masterVolume = document.getElementById('volumeSlider').value;
     }
 
+    function changeColor() {
+        MyBox.color = document.getElementById('colorPicker').value;
+        MyBox.text_color = getComplementaryColor(MyBox.color);
+    }
+
     var masterVolume = 1;
     var targetFPS = 25;
     var collisionThreshold = 100;
-    
+
+
     //window.onresize = windowresize;
 
 
@@ -91,13 +97,15 @@
     var Box = (function () {
         function Box() {
             this.type = "Box";
-            this.id = Math.floor((1 + Math.random()) * 0x10000).toString(16);
+            this.id = Math.floor((1 + Math.random()) * 0x1000000).toString(16);
             this.name = "Troy";
             this.x = 25;
             this.y = 25;
-            this.width = 30;
-            this.height = 30;
+            this.width = 40;
+            this.height = 40;
             this.playPew = false;
+            this.kills = 0;
+            this.deaths = 0;
             this.aim_x = 0;
             this.aim_y = 0;
             this.renderAim = true;
@@ -160,46 +168,51 @@
                 var collisions = true;
                 var count = 0;
 
-                while (collisions && count < 10) {
+                while (collisions && count < 20) {
                     // based on hard coded 600 x 450 playfield
                     var switchVar = randomBetween(1, 4).toString();
-                    console.log(switchVar);
+                    //console.log(switchVar);
                     switch (switchVar) {
                         case "1":
                             // top row
                             //console.log("top");
-                            this.x = Math.floor(510 * Math.random() + 45);
-                            this.y = 15;
+                            this.x = randomBetween(this.width / 2 + 1, 599 - this.width / 2);//Math.floor((600 - 3 * this.width) * Math.random() + this.width * 1.5);
+                            this.y = this.width / 2 + 1;
                             break;
                         case "2":
                             // bottom row
                             //console.log("bottom");
-                            this.x = Math.floor(510 * Math.random() + 45);
-                            this.y = 435;
+                            this.x = randomBetween(this.width / 2 + 1, 599 - this.width / 2);//Math.floor((600 - 3 * this.width) * Math.random() + this.width * 1.5);
+                            this.y = 450 - this.width / 2 - 1;
                             break;
                         case "3":
                             // left side
                             //console.log("left");
-                            this.x = 15;
-                            this.y = Math.floor(360 * Math.random() + 45);
+                            this.x = this.width / 2 + 1;
+                            this.y = randomBetween(this.height / 2 + 1, 449 - this.height / 2); //Math.floor(360 * Math.random() + 45);
                             break;
                         case "4":
                             // right side
                             //console.log("right");
-                            this.x = 585;
-                            this.y = Math.floor(360 * Math.random() + 45);
+                            this.x = 600 - this.width / 2 - 1;
+                            this.y = randomBetween(this.height / 2 + 1, 449 - this.height / 2); //Math.floor(360 * Math.random() + 45);
                             break;
                         default:
                             // something got screwed up, put it anywhere...
                             //console.log("DEFAULT");
-                            this.x = Math.floor(510 * Math.random() + 45);
-                            this.y = Math.floor(360 * Math.random() + 45);
+                            this.x = Math.floor(480 * Math.random() + 60);
+                            this.y = Math.floor(330 * Math.random() + 60);
                             break;
                     }
+
+                    //help collision detection
+                    this.x += Math.random() / 2.01;
+                    this.y += Math.random() / 2.01;
+
                     collisions = checkForSpawnCollisions(PlayWall);
                     count++;
                 }
-                //console.log(this.name + " respawned!");
+                console.log(this.name + " respawned! Took " + count + " tries!");
             }
 
             this.GetLineSegments = function () {
@@ -285,6 +298,8 @@
                 this.move_S = false;
                 this.move_W = false;
                 this.move_E = false;
+                this.deaths++;
+                updatePlayerOnLeaderboard(this);
             }
         }
 
@@ -430,6 +445,10 @@
                     case "Box": //pewpew disappears, box dies
                         removeObjectFromArray(PewPews, this);
                         objHit.die(this);
+                        this.SPLAT();
+                        var killer = getObjectFromArray(Boxes, this.sourceId);
+                        killer.kills++;
+                        updatePlayerOnLeaderboard(killer);
                         break;
                     case "PewPew": //both pewpews explode!
                         //calculate hit direction for both pewpews
@@ -489,7 +508,7 @@
             this.PEW = function () {
                 var pew = new Audio("Audio/pew.wav");
                 //this is loud and annoying, the .75 makes it a bit less so
-                pew.volume = getVolumeFactor(MyBox, this) * .75; 
+                pew.volume = getVolumeFactor(MyBox, this) * .75;
                 pew.volume *= masterVolume;
                 pew.play();
             }
@@ -497,7 +516,7 @@
             // play the pewpew sound
             this.SPLAT = function () {
                 var splat = new Audio("Audio/splat_clip.wav");
-                splat.volume = getVolumeFactor(MyBox, this);
+                splat.volume = getVolumeFactor(MyBox, this) * .5;
                 splat.volume *= masterVolume;
                 splat.play();
             }
@@ -508,8 +527,7 @@
     })();
 
     //finds volume adjustment factor based on distance between two objects
-    function getVolumeFactor(origin, target)
-    {
+    function getVolumeFactor(origin, target) {
         var deltaX = origin.x - target.x;
         var deltaY = origin.y - target.y;
 
@@ -766,14 +784,16 @@
     }
 
     //Add walls to the playfield
-    for (var i = 0; i < 20; i++) {
+    for (var i = 0; i < 15; i++) {
         var PlayWall = new Wall();
+        PlayWall.width = 40;
+        PlayWall.height = 40;
         var collisions = true;
         var count = 0;
 
         while (collisions && count < 10) {
-            PlayWall.x = Math.floor(510 * Math.random() + 45);
-            PlayWall.y = Math.floor(360 * Math.random() + 45);
+            PlayWall.x = Math.floor(478 * Math.random() + 61);
+            PlayWall.y = Math.floor(328 * Math.random() + 61);
             collisions = checkForSpawnCollisions(PlayWall);
             count++;
         }
@@ -791,11 +811,13 @@
         test.name = "TEST" + i;
         test.renderAim = false;
         test.respawn();
+        addPlayerToLeaderboard(test);
 
         //console.log("Count for box " + i + ": " + count);
-        Walls.push(test);
+        Boxes.push(test);
     }
 
+    console.log(Boxes);
 
     var tempCanvas = document.createElement("canvas");
     var drawCanvas = document.getElementById("canvas");
@@ -1001,6 +1023,10 @@
         }
     }
 
+    function getObjectFromArray(array, id) {
+        var index = arrayObjectIndexOf(array, id, "id");
+        return array[index];
+    }
 
     //stackoverflow.com/questions/8668174/indexof-method-in-an-object-array
     function arrayObjectIndexOf(myArray, searchTerm, property) {
@@ -1115,8 +1141,9 @@
             case "Box": //boxes can collide with other boxes and walls
                 //console.log("checking for box collision!");
                 Boxes.forEach(function (box) {
-                    if (doObjectsIntersect(box, obj))
-                        collision = true;
+                    if (box.id != obj.id)
+                        if (doObjectsIntersect(box, obj))
+                            collision = true;
                 });
 
                 Walls.forEach(function (wall) {
@@ -1131,10 +1158,11 @@
                 //});
 
                 Walls.forEach(function (wall) {
-                    if (doObjectsIntersect(wall, obj)) {
-                        collision = true;
-                        //console.log(wall);
-                    }
+                    if (wall.id != obj.id)
+                        if (doObjectsIntersect(wall, obj)) {
+                            collision = true;
+                            //console.log(wall);
+                        }
                 });
                 break;
         }
@@ -1172,6 +1200,55 @@
         return collision;
     }
 
+    var MyId;
+    function CreateSelf() {
+        //MyBox = new Box();
+        MyId = MyBox.id;
+        MyBox.name = prompt("Please Enter your nickname (~8 characters or so)");
+        MyBox.respawn();
+        addPlayerToLeaderboard(MyBox);
+        //console.log(MyBox.id);
+        Boxes.push(MyBox);
+        //console.log(MyBox.id);
+        //console.log(getObjectFromArray(Boxes, MyId));
+    }
+    CreateSelf();
+
+    //    function GetSelf() {
+    //        var index = arrayObjectIndexOf()
+    //    }
+
+    function joinGame(box) {
+
+
+    }
+
+    function addPlayerToLeaderboard(box) {
+        var leaderboard = document.getElementById("scores");
+        var player = document.createElement("tr");
+        player.setAttribute("id", box.id);
+        player.setAttribute("class", "lb_row");
+        player.innerHTML = //'<div class="lb_row" id="' + box.id +'">' +
+                            '<td class="lb_name">' + box.name + '</td>' +
+                            '<td class="lb_kills">0</td>' +
+                            '<td class="lb_deaths">0</td>';// +
+        //'</div>';
+        leaderboard.appendChild(player);
+    }
+
+    function removePlayerFromLeaderboard(box) {
+        var leaderboard = document.getElementById(leaderBoard);
+        var player = document.getElementById(box.id);
+        leaderboard.removeChild(player);
+    }
+
+    function updatePlayerOnLeaderboard(box) {
+        var player = document.getElementById(box.id);
+        var kills = player.getElementsByClassName("lb_kills")[0];
+        var deaths = player.getElementsByClassName("lb_deaths")[0];
+        kills.innerText = box.kills;
+        deaths.innerText = box.deaths;
+    }
 
     //console.log(MyBox.GetLineSegments());
 
@@ -1187,4 +1264,121 @@
     //    console.log("doIntersect success!");
     //else
     //    console.log("doIntersect failed X(");
+
+    /**
+
+
+    //color manipulation code from:
+    //stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
+ * Converts an HSL color value to RGB. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes h, s, and l are contained in the set [0, 1] and
+ * returns r, g, and b in the set [0, 255].
+ *
+ * @param   Number  h       The hue
+ * @param   Number  s       The saturation
+ * @param   Number  l       The lightness
+ * @return  Array           The RGB representation
+ */
+    function hslToRgb(h, s, l) {
+        var r, g, b;
+
+        if (s == 0) {
+            r = g = b = l; // achromatic
+        } else {
+            function hue2rgb(p, q, t) {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+            }
+
+            var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            var p = 2 * l - q;
+            r = hue2rgb(p, q, h + 1 / 3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1 / 3);
+        }
+
+        return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    }
+
+    /**
+ * Converts an RGB color value to HSL. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes r, g, and b are contained in the set [0, 255] and
+ * returns h, s, and l in the set [0, 1].
+ *
+ * @param   Number  r       The red color value
+ * @param   Number  g       The green color value
+ * @param   Number  b       The blue color value
+ * @return  Array           The HSL representation
+ */
+    function rgbToHsl(r, g, b) {
+        r /= 255, g /= 255, b /= 255;
+        var max = Math.max(r, g, b), min = Math.min(r, g, b);
+        var h, s, l = (max + min) / 2;
+
+        if (max == min) {
+            h = s = 0; // achromatic
+        } else {
+            var d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+
+        return [h, s, l];
+    }
+
+    //this I wrote myself
+    function getComplementaryColor(hexColor) {
+        console.log(hexColor);
+        // parce out the individual hex values
+        var r = hexColor.substring(1, 2);
+        var g = hexColor.substring(3, 4);
+        var b = hexColor.substring(5, 6);
+
+        //convert hex values to decimal
+        r = parseInt(r, 16);
+        g = parseInt(g, 16);
+        b = parseInt(b, 16);
+
+        // get hsl representation
+        var hsl = rgbToHsl(r, g, b);
+
+        console.log(hsl);
+
+        // invert hue
+        hsl[0] = invertHue(hsl[0]);
+        hsl[1] = Math.abs(1 - hsl[1]);
+        hsl[2] = Math.abs(1 - hsl[2]);
+
+        console.log(hsl);
+        // convert back to rgb
+        var rgb = hslToRgb(hsl[0], hsl[1], hsl[2]);
+
+        //convert new values back to hex
+        r = rgb[0].toString(16);
+        g = rgb[1].toString(16);
+        b = rgb[2].toString(16);
+
+        return "#" + r + g + b;
+    }
+
+    function invertHue(h) {
+        var h2 = h + 0.5;
+
+        if (h2 > 1) {
+            h2 -= 1;
+        };
+        return h2;
+    }
+
 });

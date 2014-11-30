@@ -21,15 +21,19 @@
                     <label>Volume:</label>
                     <input type="range" min="0" max="1" step="0.05" id="volumeSlider" value="1"/>
                 </div>
+                <div id="colorControl">
+                    <label>Color:</label>
+                    <input type="color" value="#0000FF" id="colorPicker" />
+                </div>
                 <div id="leaderBoard">
                     <p>Leaderboard:</p>
-                    <div id="scores">
-                        <div class="lb_row">
-                            <div class="lb_name lb_header">Name</div>
-                            <div class="lb_kills lb_header">Kills</div>
-                            <div class="lb_deaths lb_header">Died</div>
-                        </div>
-                    </div>
+                    <table id="scores">
+                        <tr class="lb_row">
+                            <td class="lb_name lb_header">Name</td>
+                            <td class="lb_kills lb_header">Kills</td>
+                            <td class="lb_deaths lb_header">Died</td>
+                        </tr>
+                    </table>
                 </div>
             </div>
         </div>

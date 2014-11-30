@@ -66,12 +66,12 @@ h2, p, label{
     text-shadow: 0px 0px 8px orange;
 }
 
-#volumeLabel {
+label {
     width: 35%;
     display: inline-block;
 }
 
-#volumeSlider {
+#volumeSlider, #colorPicker {
     width: 55%;
     display: inline-block;
     height: 16px;
@@ -83,4 +83,9 @@ h2, p, label{
 
 #contentWrapper{
     /*background: white;*/
+}
+
+table{
+    width: 100%;
+    border-collapse: collapse;
 }
