@@ -2,13 +2,37 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title></title>
-   
+
+    <link href="Styles/style.css" rel="stylesheet" />
     <script src="Scripts/jquery-2.1.1.min.js"></script>
     <script src="Scripts/graphics.js"></script>
 </head>
 <body>
-    <div id="wrapperDiv">
-        <canvas id="canvas" style="border: solid black 1px"></canvas>
-    </div> 
+    <div id="contentWrapper">
+        <h1>BOX BLASTER</h1>
+        <span style="color: wheat;">A SignalR demo by Troy Whorten</span>
+        <div>
+            <div id="wrapperDiv">
+                <canvas id="canvas"></canvas>
+            </div>
+            <div id="menuDiv">
+                <h2>MENU</h2>
+                <div id="volumeControl">
+                    <p>Volume:</p>
+                    <input type="range" min="0" max="1" step="0.05" id="volumeSlider" />
+                </div>
+                <div id="leaderBoard">
+                    <p>Leaderboard:</p>
+                    <div id="scores">
+                        <div class="lb_row">
+                            <div class="lb_name lb_header">Name</div>
+                            <div class="lb_kills lb_header">Kills</div>
+                            <div class="lb_deaths lb_header">Died</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

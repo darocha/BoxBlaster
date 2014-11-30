@@ -1,7 +1,7 @@
 ﻿$(function () {
 
     document.addEventListener("mousemove", mousemove);
-    document.addEventListener("mousedown", mouseclick);
+    document.getElementById('wrapperDiv').addEventListener("mousedown", mouseclick);
     document.addEventListener("keydown", keydown);
     document.addEventListener("keyup", keyup);
 
@@ -147,7 +147,7 @@
 
             this.respawn = function () {
                 this.isDead = false;
-                console.log(this.name + " respawned!");
+                //console.log(this.name + " respawned!");
             }
 
             this.GetLineSegments = function () {
@@ -207,7 +207,7 @@
 
             // what happens when this box hits something
             this.handleCollision = function (objHit) {
-                console.log("Handling Box Collision!");
+                //console.log("Handling Box Collision!");
                 //determine direction of hit
                 var direction = relativeCardinalDirection(this, objHit);
 
@@ -456,8 +456,8 @@
             this.maxFrames = 5;
             this.x = x;
             this.y = y;
-            
-            
+
+
             //draw this explosion to the context
             this.DrawToCanvasContext = function (ctx) {
                 this.frame++;
@@ -467,26 +467,47 @@
                     return;
                 }
 
-                var thisx = this.x;
-                var thisy = this.y;
+                //www.html5canvastutorials.com/tutorials/html5-canvas-circles/
+                //www.html5canvastutorials.com/tutorials/html5-canvas-radial-gradients/
+                var centerX = this.x;
+                var centerY = this.y;
+                var radius = 15 - (15 / this.frame) + 2;
 
-                this.particles.forEach(function (particle) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
 
-                    var baseMag = particle.magnitude;
-                    var frameMag;
-                    if (this.frame == 1)
-                        frameMag = Math.ceil(0.2 * baseMag);
-                    else
-                        frameMag = baseMag - baseMag / this.frame;
+                // create radial gradient
+                var grd = ctx.createRadialGradient(centerX, centerY, radius / 5, centerX, centerY, radius * 1.25);
+                // light blue
+                grd.addColorStop(0, 'yellow');
+                // dark blue
+                grd.addColorStop(1, 'red');
 
-                    var endpoint = new Vector(frameMag, particle.direction).GetRelativeEndPoint();
+                ctx.fillStyle = grd;
 
-                    var partx = thisx + endpoint.x;
-                    var party = thisy + endpoint.y;
-                    //draw particle
-                    ctx.fillStyle = "black";
-                    ctx.fillRect(partx - 1, party - 1, 2, 2);
-                });
+                //context.fillStyle = 'green';
+                ctx.fill();
+
+                //var thisx = this.x;
+                //var thisy = this.y;
+
+                //this.particles.forEach(function (particle) {
+
+                //    var baseMag = particle.magnitude;
+                //    var frameMag;
+                //    if (this.frame == 1)
+                //        frameMag = Math.ceil(0.2 * baseMag);
+                //    else
+                //        frameMag = baseMag - baseMag / this.frame;
+                //
+                //    var endpoint = new Vector(frameMag, particle.direction).GetRelativeEndPoint();
+                //
+                //    var partx = thisx + endpoint.x;
+                //    var party = thisy + endpoint.y;
+                //draw particle
+                //    ctx.fillStyle = "black";
+                //    ctx.fillRect(partx - 1, party - 1, 2, 2);
+                //});
 
             };
 
@@ -547,7 +568,7 @@
 
     //move obj1 in cardinal direction adjacent to obj2
     function moveAdjacent(obj1, obj2, direction) {
-        console.log(direction);
+        //console.log(direction);
         switch (direction) {
             case "N":
                 obj1.y = obj2.y + (obj2.height + obj1.height) / 2;
@@ -581,25 +602,83 @@
 
     var MyBox = new Box();
 
-//   for (var i = 0; i < 20; i++) {
-//        var TestBox = new Box();
-//        TestBox.aim_color = "yellow";
-//        TestBox.color = "purple";
-//        TestBox.id = i;
-//        TestBox.name = "Test" + i;
-//        TestBox.x = 600 * Math.random();
-//        TestBox.y = 300 * Math.random();
-//        TestBox.die();
-//        Boxes.push(TestBox);
+    //   for (var i = 0; i < 20; i++) {
+    //        var TestBox = new Box();
+    //        TestBox.aim_color = "yellow";
+    //        TestBox.color = "purple";
+    //        TestBox.id = i;
+    //        TestBox.name = "Test" + i;
+    //        TestBox.x = 600 * Math.random();
+    //        TestBox.y = 300 * Math.random();
+    //        TestBox.die();
+    //        Boxes.push(TestBox);
     //    }
 
-       for (var i = 0; i < 20; i++) {
-            var TestBox = new Wall();
-            TestBox.x = 600 * Math.random();
-            TestBox.y = 300 * Math.random();
-            Walls.push(TestBox);
-        }
+    //Add walls to the playfield
+    for (var i = 0; i < 10; i++) {
+        var TestBox = new Wall();
+        TestBox.x = 600 * Math.random();
+        TestBox.y = 300 * Math.random();
+        Walls.push(TestBox);
+    }
 
+    //create the side boundaries
+    var x1 = -15;
+    //var x2 = -15;
+    var x3 = 615;
+    //var x4 = 645;
+    for (var i = 0; i < (300 / 30) + 2; i++) {
+        var wall1 = new Wall();
+        wall1.x = x1;
+        wall1.y = -45 + i * 30;
+        wall1.MoveMe = function () { };
+        Walls.push(wall1);
+
+        //var wall2 = new Wall();
+        //wall2.x = x2;
+        //wall2.y = -45 + i * 30;
+        //Walls.push(wall2);
+
+        var wall3 = new Wall();
+        wall3.x = x3;
+        wall3.y = -45 + i * 30;
+        wall3.MoveMe = function () { };
+        Walls.push(wall3);
+
+        //var wall4 = new Wall();
+        //wall4.x = x4;
+        //wall4.y = -45 + i * 30;
+        //Walls.push(wall4);
+    }
+
+    //create the top and bottom boundaries
+    var y1 = -15;
+    //var y2 = -15;
+    var y3 = 315;
+    //var y4 = 345;
+    for (var i = 0; i < (600 / 30) ; i++) {
+        var wall1 = new Wall();
+        wall1.x = -45 + i * 30;
+        wall1.y = y1;
+        wall1.MoveMe = function () { };
+        Walls.push(wall1);
+
+        //var wall2 = new Wall();
+        //wall2.x = -45 + i * 30;
+        //wall2.y = y2;
+        //Walls.push(wall2);
+
+        var wall3 = new Wall();
+        wall3.x = -45 + i * 30;
+        wall3.y = y3;
+        wall3.MoveMe = function () { };
+        Walls.push(wall3);
+
+        //var wall4 = new Wall();
+        //wall4.x = -45 + i * 30;
+        //wall4.y = y4;
+        //Walls.push(wall4);
+    }
 
     var tempCanvas = document.createElement("canvas");
     var drawCanvas = document.getElementById("canvas");
@@ -622,16 +701,16 @@
             lastMessageTime = now;
             counter++;
 
-            var angle =
+            //var angle =
 
             //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
             //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
-            MyBox.aim_x = event.clientX;
-            MyBox.aim_y = event.clientY;
-            Boxes.forEach(function (item) {
-                item.aim_x = event.clientX;
-                item.aim_y = event.clientY;
-            });
+            MyBox.aim_x = event.layerX;
+            MyBox.aim_y = event.layerY;
+            //Boxes.forEach(function (item) {
+            //    item.aim_x = event.clientX;
+            //    item.aim_y = event.clientY;
+            //});
         }
     }
 
@@ -752,7 +831,7 @@
         Walls.forEach(function (item) {
             item.DrawToCanvasContext(tctx);
         });
-        
+
 
 
         MyBox.DrawToCanvasContext(tctx);
@@ -864,6 +943,7 @@
     }
 
     function checkForCollisions(obj) {
+
         switch (obj.type) {
             case "Box": //boxes can collide with other boxes and walls
                 //console.log("checking for box collision!");
@@ -880,8 +960,9 @@
                 break;
             case "PewPew": //pewpews can collide with walls, boxes, and other pewpews
                 Boxes.forEach(function (box) {
-                    if (doObjectsIntersect(box, obj))
-                        obj.handleCollision(box);
+                    if (box.id != obj.sourceId)
+                        if (doObjectsIntersect(box, obj))
+                            obj.handleCollision(box);
                 });
                 if (Walls != null)
                     Walls.forEach(function (wall) {
@@ -890,7 +971,7 @@
                     });
                 if (PewPews != null)
                     PewPews.forEach(function (pew) {
-                        if (pew.id != obj.id)
+                        if (pew.sourceId != obj.sourceId)
                             if (doObjectsIntersect(pew, obj))
                                 obj.handleCollision(pew);
                     });
@@ -928,7 +1009,7 @@
         segments1.some(function (segment1) {
             segments2.some(function (segment2) {
                 if (doIntersect(segment1, segment2)) {
-                    console.log("Collision!");
+                    //console.log("Collision!");
                     collision = true;
                     return true;
                 }
@@ -939,18 +1020,18 @@
     }
 
 
-    console.log(MyBox.GetLineSegments());
+    //console.log(MyBox.GetLineSegments());
 
-    var ls1 = new LineSegment(new Point(0, 0), new Point(1, 3));
-    var ls2 = new LineSegment(new Point(1, 0), new Point(0, 1));
+    //var ls1 = new LineSegment(new Point(0, 0), new Point(1, 3));
+    //var ls2 = new LineSegment(new Point(1, 0), new Point(0, 1));
 
-    if (doIntersect(ls1, ls2))
-        console.log("doIntersect success!");
-    else
-        console.log("doIntersect failed X(");
+    //if (doIntersect(ls1, ls2))
+    //    console.log("doIntersect success!");
+    //else
+    //    console.log("doIntersect failed X(");
 
-    if (doIntersect(ls1, ls1))
-        console.log("doIntersect success!");
-    else
-        console.log("doIntersect failed X(");
+    //if (doIntersect(ls1, ls1))
+    //    console.log("doIntersect success!");
+    //else
+    //    console.log("doIntersect failed X(");
 });

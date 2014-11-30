@@ -1,0 +1,75 @@
+﻿body {
+    font-family:sans-serif;
+    background-image: url('body_bkg.gif');
+}
+
+.lb_name{
+    display: inline-block;
+    width: 40%;
+    padding: 3px 0px;
+    font-size: 10pt;
+    text-align: left;
+}
+
+.lb_kills, .lb_deaths{
+    display: inline-block;
+    width: 25%;
+    padding: 3px 0px;
+    font-size: 10pt;
+    text-align: center;
+    border-left: dotted black 1px;
+}
+
+.lb_kills {
+    color: blue;
+}
+
+.lb_deaths{
+    color: red;
+}
+
+.lb_header{
+    color: black;
+}
+
+.lb_row{
+    border-bottom: dotted black 1px;
+}
+
+#menuDiv{
+    display: inline-block; 
+    width: 150px; 
+    height: 300px; 
+    border: solid black 1px;
+    vertical-align: top;
+    padding: 0px 10px;
+    background: white;
+}
+
+#wrapperDiv{
+    display:inline-block;
+} 
+
+#canvas{
+    border: solid black 1px;
+}
+
+h1{
+    color: yellow;
+    margin: 5px;
+    text-shadow: 0px 0px 25px red;
+    display: inline-block;
+}
+
+h2, p {
+    margin: 5px 0px;
+    text-shadow: 0px 0px 8px orange;
+}
+
+#leaderBoard, #volumeControl{
+    font-size: 11pt;
+}
+
+#contentWrapper{
+    /*background: white;*/
+}
