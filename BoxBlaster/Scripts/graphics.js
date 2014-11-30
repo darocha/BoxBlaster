@@ -138,10 +138,6 @@
                     ctx.fillStyle = "yellow";
                     ctx.fillText("X(", this.x - this.width / 2, this.y - this.height / 4, this.width);
 
-                    //add dead emoticon
-                    ctx.fillStyle = "yellow";
-                    ctx.fillText("X(", this.x, this.y, this.width);
-
                     //add countdown
                     var counter = Math.ceil((this.milsToRespawn - (new Date() - this.lastTOD)) / 1000);
                     ctx.fillText(counter, this.x, this.y, this.width);
@@ -175,19 +171,23 @@
             }
 
             this.MoveMe = function () {
+                //dead boxes don't move
+                if (this.isDead)
+                    return;
+
                 if (this.move_N) {
                     this.y -= this.speed;
                     checkForCollisions(this);
                 }
-                if (this.move_S){
+                if (this.move_S) {
                     this.y += this.speed;
                     checkForCollisions(this);
                 }
-                if (this.move_W){
+                if (this.move_W) {
                     this.x -= this.speed;
                     checkForCollisions(this);
                 }
-                if (this.move_E){
+                if (this.move_E) {
                     this.x += this.speed;
                     checkForCollisions(this);
                 }
@@ -226,7 +226,12 @@
 
             this.die = function (pewpew) {
                 this.milsToRespawn = 5000;
+                this.lastTOD = new Date();
                 this.isDead = true;
+                this.move_N = false;
+                this.move_S = false;
+                this.move_W = false;
+                this.move_E = false;
             }
         }
 
@@ -371,7 +376,7 @@
                 switch (objHit.type) {
                     case "Box": //pewpew disappears, box dies
                         removeObjectFromArray(PewPews, this);
-                        objHid.die(this);
+                        objHit.die(this);
                         break;
                     case "PewPew": //both pewpews explode!
                         //calculate hit direction for both pewpews
@@ -400,7 +405,8 @@
                         break;
                     case "Wall": //pewpew exlodes!
                         //calculate hit direction for both pewpews
-                        var thisHitDir = relativeCardinalDirection(this, objHit);
+                        //var thisHitDir = relativeCardinalDirection(this, objHit);
+                        var thisHitDir = relativeCardinalDirection(objHit, this);
 
                         //calculate reflected vectors
                         var thisRefVec = this.vector.GetReflectedOffDirection(thisHitDir);
@@ -424,7 +430,7 @@
 
     function getOppositeCardinalDirection(direction) {
         var oppDir = "";
-        switch (cardDir) {
+        switch (direction) {
             case "N":
                 oppDir = "S";
                 break;
@@ -450,8 +456,8 @@
             this.maxFrames = 5;
             this.x = x;
             this.y = y;
-            this.particles = CreateParticleArray(vector || new Vector(), spread || Math.PI * 2);
-
+            
+            
             //draw this explosion to the context
             this.DrawToCanvasContext = function (ctx) {
                 this.frame++;
@@ -501,6 +507,8 @@
 
                 return particles;
             }
+
+            this.particles = CreateParticleArray(vector || new Vector(), spread || Math.PI * 2);
         }
 
         return Explosion;
@@ -518,7 +526,7 @@
     // The N, S, E, W direction obj2 lies from obj1;
     function relativeCardinalDirection(obj1, obj2) {
         var deltaY = obj2.y - obj1.y;
-        var deltaX = obj2.x - obj1.y;
+        var deltaX = obj2.x - obj1.x;
         var direction;
 
         if (Math.abs(deltaY) > Math.abs(deltaX)) {
@@ -539,6 +547,7 @@
 
     //move obj1 in cardinal direction adjacent to obj2
     function moveAdjacent(obj1, obj2, direction) {
+        console.log(direction);
         switch (direction) {
             case "N":
                 obj1.y = obj2.y + (obj2.height + obj1.height) / 2;
@@ -572,21 +581,24 @@
 
     var MyBox = new Box();
 
-    for (var i = 0; i < 20; i++) {
-        var TestBox = new Box();
-        TestBox.aim_color = "yellow";
-        TestBox.color = "purple";
-        TestBox.id = i;
-        TestBox.name = "Test" + i;
-        TestBox.x = 600 * Math.random();
-        TestBox.y = 300 * Math.random();
-        Boxes.push(TestBox);
-    }
+//   for (var i = 0; i < 20; i++) {
+//        var TestBox = new Box();
+//        TestBox.aim_color = "yellow";
+//        TestBox.color = "purple";
+//        TestBox.id = i;
+//        TestBox.name = "Test" + i;
+//        TestBox.x = 600 * Math.random();
+//        TestBox.y = 300 * Math.random();
+//        TestBox.die();
+//        Boxes.push(TestBox);
+    //    }
 
-    for (var i = 0; i < 20; i++) {
-        //Boxes[i] = null;
-    }
-
+       for (var i = 0; i < 20; i++) {
+            var TestBox = new Wall();
+            TestBox.x = 600 * Math.random();
+            TestBox.y = 300 * Math.random();
+            Walls.push(TestBox);
+        }
 
 
     var tempCanvas = document.createElement("canvas");
@@ -737,6 +749,10 @@
         Explosions.forEach(function (item) {
             item.DrawToCanvasContext(tctx);
         });
+        Walls.forEach(function (item) {
+            item.DrawToCanvasContext(tctx);
+        });
+        
 
 
         MyBox.DrawToCanvasContext(tctx);
@@ -813,19 +829,19 @@
     //1 = Clockwise
     //2 = Counterclockwise
     function orientation(p, q, r) {
-        var val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
-
+        var val = ((q.y - p.y) * (r.x - q.x)) - ((q.x - p.x) * (r.y - q.y));
         if (val == 0)
             return 0;
 
-        return (val > 1) ? 1 : 2;
+        var orientation = val > 0 ? 1 : 2;
+        return orientation;
     }
 
     //determine if two line segments intersect
     function doIntersect(line1, line2) {
         var p1 = line1.Point1;
-        var p2 = line1.Point2;
-        var q1 = line2.Point1;
+        var q1 = line1.Point2;
+        var p2 = line2.Point1;
         var q2 = line2.Point2;
 
         var o1 = orientation(p1, q1, p2);
@@ -850,8 +866,7 @@
     function checkForCollisions(obj) {
         switch (obj.type) {
             case "Box": //boxes can collide with other boxes and walls
-                //check if there are box centers within 100 pixels
-                // if it's too slow I'll optimize, for now check everyone
+                //console.log("checking for box collision!");
                 Boxes.forEach(function (box) {
                     if (box.id != obj.id)
                         if (doObjectsIntersect(box, obj))
@@ -906,23 +921,36 @@
 
         var segments1 = obj1.GetLineSegments();
         var segments2 = obj2.GetLineSegments();
+        var collision = false;
 
         //console.log("Checking object intersection");
 
-        segments1.forEach(function (segment1) {
-            segments2.forEach(function (segment2) {
-                //console.log("Segment1: ");
-                //console.log(segment1);
-                //console.log("Segment2: ");
-                //console.log(segment2);
-                if (doIntersect(segment1, segment2))
+        segments1.some(function (segment1) {
+            segments2.some(function (segment2) {
+                if (doIntersect(segment1, segment2)) {
+                    console.log("Collision!");
+                    collision = true;
                     return true;
+                }
             });
         });
 
-        return false;
+        return collision;
     }
 
 
     console.log(MyBox.GetLineSegments());
+
+    var ls1 = new LineSegment(new Point(0, 0), new Point(1, 3));
+    var ls2 = new LineSegment(new Point(1, 0), new Point(0, 1));
+
+    if (doIntersect(ls1, ls2))
+        console.log("doIntersect success!");
+    else
+        console.log("doIntersect failed X(");
+
+    if (doIntersect(ls1, ls1))
+        console.log("doIntersect success!");
+    else
+        console.log("doIntersect failed X(");
 });
