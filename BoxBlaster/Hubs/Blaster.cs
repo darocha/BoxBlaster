@@ -4,9 +4,11 @@ using System.Linq;
 using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
+using System.Web.Caching;
 
 namespace BoxBlaster.Hubs
 {
+
     public class Box
     {
         public string id { get; set; }
@@ -32,37 +34,93 @@ namespace BoxBlaster.Hubs
         public int height { get; set; }
     }
 
-    //public class PewPew
-    //{
-    //    public string id { get; set; }
-    //    public string sourceId { get; set; }
-    //    public float x { get; set; }
-    //    public float y { get; set; }
-    //}
 
     [HubName("blasterHub")]
     public class Blaster : Hub
     {
-        private List<Box> Boxes { get; set; }
-        private List<Wall> Walls { get; set; }
+        //private List<Box> Boxes { get; set; }
+        //private List<Wall> Walls { get; set; }
+
+        public List<Box> Boxes
+        {
+            get {
+                List<Box> _boxes = new List<Box>();
+
+                foreach (Box box in Startup.BoxCache)
+	            {
+                    _boxes.Add(box);
+	            }
+
+                return _boxes;
+            }
+        }
+        public List<Wall> Walls
+        {
+            get
+            {
+                List<Wall> _walls = new List<Wall>();
+
+                foreach (Wall wall in Startup.WallCache)
+                {
+                    _walls.Add(wall);
+                }
+
+                return _walls;
+            }
+        }
 
         public Blaster()
         {
-            Boxes = new List<Box>();
-            Walls = new List<Wall>();
+            //Boxes and Walls are stored in application cache
+            //Boxes = new List<Box>();
+            //Walls = new List<Wall>();
+
+            //Boxes = (List<Box>)Startup.GameCache["Boxes"];
+            //if (Boxes == null)
+            //{
+            //    Boxes = new List<Box>();
+            //}
+
+            //Boxes = (List<Box>)Startup.GameCache["Walls"];
+            //if (Boxes == null)
+            //{
+            //    Walls = new List<Wall>();
+            //}
+
         }
 
+
+
+        public void SaveBox(Box box)
+        {
+            Startup.BoxCache[box.id] = box;
+        }
+
+        public void SaveWall(Wall wall)
+        {
+            Startup.WallCache[wall.id] = wall;
+        }
+
+        public void RemoveBox(Box box)
+        {
+            Startup.BoxCache.Remove(box.id);
+        }
+
+        public void RemoveWall(Wall wall)
+        {
+            Startup.WallCache.Remove(wall.id);
+        }
 
         public override System.Threading.Tasks.Task OnConnected()
         {
             //loop through walls, adding to client
-            foreach (var wall in Walls)
+            foreach (Wall wall in Startup.WallCache)
             {
                 Clients.Caller.wallAdded(wall.id, wall.x, wall.y, wall.width, wall.height);
             }
 
             //loop through boxes, adding to client
-            foreach (var box in Boxes)
+            foreach (Box box in Startup.BoxCache)
             {
                 Clients.Caller.existingPlayerLoad(box.id, box.x, box.y, box.name, box.kills, box.deaths, box.color, box.text_color);
             }
@@ -84,7 +142,8 @@ namespace BoxBlaster.Hubs
             if (player != null && player.id != null)
                 Clients.Others.playerLeft(player.id);
 
-            Boxes.Remove(player);
+            //Boxes.Remove(player);
+            RemoveBox(player);
 
             return base.OnDisconnected(stopCalled);
         }
@@ -154,7 +213,8 @@ namespace BoxBlaster.Hubs
             player.text_color = text_color;
             player.kills = 0;
             player.deaths = 0;
-            Boxes.Add(player);
+            //Boxes.Add(player);
+            SaveBox(player);
             Clients.All.playerJoined(id, x, y, name, color, text_color);
         }
 
@@ -193,7 +253,8 @@ namespace BoxBlaster.Hubs
                 wall.width = width;
                 wall.height = height;
 
-                Walls.Add(wall);
+                //Walls.Add(wall);
+                SaveWall(wall);
 
                 Clients.All.wallAdded(id, x, y, width, height);
             }
@@ -203,7 +264,8 @@ namespace BoxBlaster.Hubs
         {
             var wall = Walls.Where(w => w.id == id).SingleOrDefault();
 
-            Walls.Remove(wall);
+            //Walls.Remove(wall);
+            RemoveWall(wall);
 
             Clients.All.wallRemoved(id);
         }

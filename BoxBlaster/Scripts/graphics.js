@@ -891,7 +891,7 @@
 
             //var angle =
 
-            console.log("AimMsg#" + counter + " x: " + event.layerX + " y: " + event.layerY);
+            //console.log("AimMsg#" + counter + " x: " + event.layerX + " y: " + event.layerY);
             //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
             MyBox.aim_x = event.layerX;
             MyBox.aim_y = event.layerY;
@@ -1569,6 +1569,7 @@
             noob.x = x;
             noob.y = y;
             noob.name = name;
+            noob.renderAim = false;
             Boxes.push(noob);
 
             //add player to leaderboard
@@ -1605,7 +1606,7 @@
     };
 
     hub.client.existingPlayerLoad = function (id, x, y, name, kills, deaths, color, text_color) {
-
+        console.log("client.existnigPlayerLoad called");
         //if new player (initial load), create and push new Box
         //otherwise, update info for existing player
         var player = getObjectFromArray(Boxes, id);
