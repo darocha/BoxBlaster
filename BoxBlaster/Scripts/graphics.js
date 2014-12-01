@@ -249,25 +249,31 @@
                 if (this.isDead)
                     return;
 
+                var moving = false;
                 if (this.move_N) {
                     this.y -= this.speed;
                     checkForCollisions(this);
+                    moving = true;
                 }
                 if (this.move_S) {
                     this.y += this.speed;
                     checkForCollisions(this);
+                    moving = true;
                 }
                 if (this.move_W) {
                     this.x -= this.speed;
                     checkForCollisions(this);
+                    moving = true;
                 }
                 if (this.move_E) {
                     this.x += this.speed;
                     checkForCollisions(this);
+                    moving = true;
                 }
 
-                if (this.id == MyBox.id)
-                    srPlayerMoved(this.id, this.x, this.y);
+                if (moving)
+                    if (this.id == MyBox.id)
+                        srPlayerMoved(this.id, this.x, this.y);
 
             };
 
@@ -482,7 +488,7 @@
                             updatePlayerOnLeaderboard(killer);
 
                             //if the player did it, notify signalr
-                            if(this.sourceId == MyBox.id)
+                            if (this.sourceId == MyBox.id)
                                 srKilledPlayer(this.id, objHit.id)
                         }
                         break;
@@ -1706,13 +1712,14 @@
     }
 
     var isSignalrReady = false;
-    $.connection.hub.start().done(function () { isSignalrReady = true;});
+    $.connection.hub.start().done(function () { isSignalrReady = true; });
 
     //define server calling functions
     //this is called by the pewpew collision handler when I am the killer
     function srKilledPlayer(killerId, victimId) {
         if (isSignalrReady) {
             hub.server.killedPlayer(killerId, victimId);
+            console.log("killedPlayer called");
         }
 
     }
@@ -1723,14 +1730,16 @@
     function srPlayerMoved(id, x, y) {
         if (isSignalrReady) {
             hub.server.playerMoved(id, x, y);
+            console.log("playerMoved called");
         }
 
     }
-    
+
     //called by Box.firePew when I shoot
     function srShotFired(id, sourceId, mag, dir, x, y) {
         if (isSignalrReady) {
             hub.server.shotFired(id, sourceId, mag, dir, x, y);
+            console.log("shotFired called");
         }
 
     }
@@ -1739,8 +1748,9 @@
     function srWallMoved(id, x, y) {
         if (isSignalrReady) {
             hub.server.wallMoved(id, x, y);
+            console.log("wallMoved called");
         }
-            
+
 
     }
 
@@ -1748,6 +1758,7 @@
     function srWallAdded(id, x, y, width, height) {
         if (isSignalrReady) {
             hub.server.wallAdded(id, x, y, width, height);
+            console.log("wallAdded called");
         }
 
     }
@@ -1756,6 +1767,7 @@
     function srWallRemoved(id) {
         if (isSignalrReady) {
             hub.server.wallRemoved(id);
+            console.log("wallRemoved called");
         }
 
     }
