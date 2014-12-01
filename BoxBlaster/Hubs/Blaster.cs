@@ -195,7 +195,7 @@ namespace BoxBlaster.Hubs
 
                 Walls.Add(wall);
 
-                Clients.Others.wallAdded(id, x, y, width, height);
+                Clients.All.wallAdded(id, x, y, width, height);
             }
         }
 
