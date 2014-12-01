@@ -111,13 +111,13 @@ namespace BoxBlaster.Hubs
 		public override System.Threading.Tasks.Task OnConnected()
 		{
 			//loop through walls, adding to client
-			foreach (Wall wall in Startup.WallCache)
+			foreach (Wall wall in Walls)
 			{
 				Clients.Caller.wallAdded(wall.id, wall.x, wall.y, wall.width, wall.height);
 			}
 
 			//loop through boxes, adding to client
-			foreach (Box box in Startup.BoxCache)
+			foreach (Box box in Boxes)
 			{
 				Clients.Caller.existingPlayerLoad(box.id, box.x, box.y, box.name, box.kills, box.deaths, box.color, box.text_color);
 			}
