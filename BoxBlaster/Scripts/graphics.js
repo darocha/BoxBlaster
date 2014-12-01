@@ -1588,19 +1588,23 @@
     };
 
     hub.client.pickNickname = function (id) {
+        MyBox = new Box();
         MyBox.id = id;
         MyId = id;
 
         MyBox.name = "";
 
         //Get player nickname
-        while (MyBox.name.length < 4 || MyBox.name.length > 8)
-            MyBox.name = prompt("Please Enter your nickname (4 to 8 characters)").toUpperCase();
+        //while (MyBox.name.length < 4 || MyBox.name.length > 8)
+        //    prompt("Please Enter your nickname (4 to 8 characters)", MyBox.name);
+
+        MyBox.name = randomBetween(10000, 99999);
 
         MyBox.respawn();
         addPlayerToLeaderboard(MyBox);
         Boxes.push(MyBox);
 
+        isSignalrReady = true;
         srPlayerJoin(MyBox.id, MyBox.x, MyBox.y, MyBox.name, MyBox.color, MyBox.text_color);
 
     };
@@ -1621,6 +1625,7 @@
             player.deaths = deaths;
             player.color = color;
             player.text_color = text_color;
+            player.renderAim = false;
             addPlayerToLeaderboard(player);
             Boxes.push(player);
             console.log("Existing Player Loaded!");
@@ -1707,10 +1712,10 @@
     //called by hub.client.pickNickname to join to server
     function srPlayerJoin(id, x, y, name, color, text_color) {
         if (isSignalrReady) {
-            hub.server.playerJoin(id, x, y, name, color, text_color);
             console.log("playerJoin called");
+            hub.server.playerJoin(id, x, y, name, color, text_color);        
         }
-
+        console.log(isSignalrReady);
     }
 
     //this is called by the pewpew collision handler when I am the killer
