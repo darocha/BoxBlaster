@@ -14,6 +14,8 @@
     }
 
     var masterVolume = 1;
+
+    //don't change targetFPS, all the movement rates are derived from it (I know, not the wisest choice...)
     var targetFPS = 25;
     var collisionThreshold = 100;
 
@@ -264,6 +266,9 @@
                     checkForCollisions(this);
                 }
 
+                if (this.id == MyBox.id)
+                    srPlayerMoved(this.id, this.x, this.y);
+
             };
 
             this.firePew = function () {
@@ -280,6 +285,14 @@
                 pewBox.MoveMe();
                 pewBox.PEW();
                 PewPews.push(pewBox);
+
+                if (this.id == MyBox.id)
+                    srShotFired(this.id,
+                                pewBox.id,
+                                pewBox.vector.magnitude,
+                                pewBox.vector.direction,
+                                pewBox.x,
+                                pewBox.y);
             };
 
             // what happens when this box hits something
@@ -311,6 +324,7 @@
                 this.move_E = false;
                 this.deaths++;
                 updatePlayerOnLeaderboard(this);
+
             }
         }
 
@@ -375,6 +389,7 @@
                 }
 
                 checkForCollisions(this);
+                srWallMoved(this.id, x, y);
             };
 
             // what happens when this wall hits something
@@ -465,6 +480,10 @@
                             var killer = getObjectFromArray(Boxes, this.sourceId);
                             killer.kills++;
                             updatePlayerOnLeaderboard(killer);
+
+                            //if the player did it, notify signalr
+                            if(this.sourceId == MyBox.id)
+                                srKilledPlayer(this.id, objHit.id)
                         }
                         break;
                     case "PewPew": //both pewpews explode!
@@ -839,7 +858,7 @@
     //    Boxes.push(test);
     //}
 
-    console.log(Boxes);
+    //console.log(Boxes);
 
     var tempCanvas = document.createElement("canvas");
     var drawCanvas = document.getElementById("canvas");
@@ -854,17 +873,18 @@
         maxDist = Math.sqrt(Math.pow(drawCanvas.height, 2) + Math.pow(drawCanvas.width, 2));
     }
 
+
     function mousemove(event) {
         var now = new Date();
 
         //console.log(now + " " + lastMessageTime)
-        if (now - lastMessageTime >= 10) {
+        if (now - lastMessageTime >= 40) {
             lastMessageTime = now;
             counter++;
 
             //var angle =
 
-            //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
+            console.log("AimMsg#" + counter + " x: " + event.layerX + " y: " + event.layerY);
             //console.log("AimMsg#" + counter + " x: " + event.clientX + " y: " + event.clientY);
             MyBox.aim_x = event.layerX;
             MyBox.aim_y = event.layerY;
@@ -873,6 +893,8 @@
             //    item.aim_y = event.clientY;
             //});
         }
+
+        return false;
     }
 
     function keydown(event) {
@@ -1033,9 +1055,7 @@
 
 
 
-    var renderHandle = window.setInterval(render, 1000 / targetFPS);
-    var moveDaemon = window.setInterval(movebox, 1000 / targetFPS);
-    var audioDaemon = window.setInterval(playaudio, 400);
+
 
     //stackoverflow.com/questions/5767325/remove-specific-element-from-an-array
     function removeObjectFromArray(array, obj) {
@@ -1473,7 +1493,7 @@
         //console.log("Count for box " + i + ": " + count);
         Walls.push(PlayWall);
     }
-    
+
     ////////////////////////////////////////////////
     //
     // BEGIN SIGNALR STUFF
@@ -1524,16 +1544,26 @@
         if (id == MyBox.id) {
             //player is now fully added to game
             //add event listeners and enable menu once player 
-            document.addEventListener("mousemove", mousemove);
+            document.getElementById('wrapperDiv').addEventListener("mousemove", mousemove);
+            //document.addEventListener("mousemove", redirectMousemoveEvent);
+
             document.getElementById('wrapperDiv').addEventListener("mousedown", mouseclick);
             document.addEventListener("keydown", keydown);
             document.addEventListener("keyup", keyup);
             document.getElementById('colorPicker').addEventListener("input", changeColor);
             document.getElementById('volumeSlider').addEventListener("input", adjustVolume);
             document.getElementById('laserToggle').addEventListener("change", toggleLaser);
+
             document.getElementById('colorPicker').removeAttribute("disabled");
             document.getElementById('volumeSlider').removeAttribute("disabled");
             document.getElementById('laserToggle').removeAttribute("disabled");
+            document.getElementById('canvas').style.visibility = "visible";
+
+            window.setInterval(render, 1000 / targetFPS);
+            window.setInterval(movebox, 40);
+            window.setInterval(playaudio, 400);
+
+            console.log("Joined the game");
         }
         else {
             //clear the screen of pewpews
@@ -1632,8 +1662,7 @@
         //do the add/update bit
         var wall = getObjectFromArray(Walls, id);
 
-        if (wall == null)
-        {
+        if (wall == null) {
             wall = new Wall();
             wall.id = id;
             wall.x = x;
@@ -1643,8 +1672,7 @@
 
             Walls.push(wall);
         }
-        else
-        { //we already have the wall, so just update it
+        else { //we already have the wall, so just update it
             wall.id = id;
             wall.x = x;
             wall.y = y;
@@ -1661,39 +1689,75 @@
         }
     };
 
-    hub.client.spawnPewPew = function (id, sourceId, mag, dir, x, y)
-    {
+    hub.client.spawnPewPew = function (id, sourceId, mag, dir, x, y) {
         var pew = new PewPew(new Vector(mag, dir));
         pew.x = x;
         pew.y = y;
         pew.id = id;
         pew.sourceId = sourceId;
-        
+
         PewPews.push()
     };
 
-    hub.client.explodePew = function (id){
+    hub.client.explodePew = function (id) {
         var pewpew = getObjectFromArray(PewPews, id);
-        if(pewpew != null && pewpew.id != null)
+        if (pewpew != null && pewpew.id != null)
             pewpew.Explode();
     }
 
-    $.connection.hub.start();
+    var isSignalrReady = false;
+    $.connection.hub.start().done(function () { isSignalrReady = true;});
 
-    //define server calling functions so they can 
-    function srKilledPlayer(killerId, victimId)
-    {
-        hub.server.killedPlayer(killerId, victimId);
+    //define server calling functions
+    //this is called by the pewpew collision handler when I am the killer
+    function srKilledPlayer(killerId, victimId) {
+        if (isSignalrReady) {
+            hub.server.killedPlayer(killerId, victimId);
+        }
+
     }
 
-    function srPlayerMoved(id, x, y)
-    {
-        hub.server.playerMoved(id, x, y);
+    //called by Box.MoveMe when I move myself
+    //come to think of it, moveme is only EVER called as a result of 
+    //player input, so the check is pointless
+    function srPlayerMoved(id, x, y) {
+        if (isSignalrReady) {
+            hub.server.playerMoved(id, x, y);
+        }
+
+    }
+    
+    //called by Box.firePew when I shoot
+    function srShotFired(id, sourceId, mag, dir, x, y) {
+        if (isSignalrReady) {
+            hub.server.shotFired(id, sourceId, mag, dir, x, y);
+        }
+
     }
 
-    function srShotFired(id, sourceId, mag, dir, x, y)
-    {
-        hub.server.shotFired(id, sourceId, mag, dir, x, y);
+    //called by Wall.MoveMe (if someone else moves a wall, MoveMe isn't called)
+    function srWallMoved(id, x, y) {
+        if (isSignalrReady) {
+            hub.server.wallMoved(id, x, y);
+        }
+            
+
+    }
+
+    //called by eventHandler for "Add Wall" menu button
+    function srWallAdded(id, x, y, width, height) {
+        if (isSignalrReady) {
+            hub.server.wallAdded(id, x, y, width, height);
+        }
+
+    }
+
+    //called by eventHandler for "Rem Wall" menu button
+    function srWallRemoved(id) {
+        if (isSignalrReady) {
+            hub.server.wallRemoved(id);
+        }
+
     }
 
 

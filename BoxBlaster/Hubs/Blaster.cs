@@ -194,5 +194,14 @@ namespace BoxBlaster.Hubs
                 Clients.Others.wallAdded(id, x, y, width, height);
             }
         }
+
+        public void WallRemoved(string id)
+        {
+            var wall = Walls.Where(w => w.id == id).SingleOrDefault();
+
+            Walls.Remove(wall);
+
+            Clients.All.wallRemoved(id);
+        }
     }
 }
