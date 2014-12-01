@@ -1595,10 +1595,18 @@
         MyBox.name = "";
 
         //Get player nickname
-        //while (MyBox.name.length < 4 || MyBox.name.length > 8)
-        //    prompt("Please Enter your nickname (4 to 8 characters)", MyBox.name);
+        while (MyBox.name != null && (MyBox.name.length < 4 || MyBox.name.length > 8))
+            MyBox.name = prompt("Please Enter your nickname (4 to 8 characters)");
 
-        MyBox.name = randomBetween(10000, 99999);
+        if (MyBox.name == null){
+            MyBox.name = randomBetween(10000, 99999);
+            alert("Problem getting nickname, using random number instead... Sorry =(")
+        }
+        else
+        {
+            MyBox.name = MyBox.name.toUpperCase();
+        }
+        
 
         MyBox.respawn();
         addPlayerToLeaderboard(MyBox);
