@@ -143,15 +143,19 @@ namespace BoxBlaster.Hubs
 
         }
 
-        public void Join(string id, float x, float y, string name)
+        public void PlayerJoin(string id, float x, float y, string name, string color, string text_color)
         {
             var player = new Box();
             player.id = id;
             player.x = x;
             player.y = y;
             player.name = name;
+            player.color = color;
+            player.text_color = text_color;
+            player.kills = 0;
+            player.deaths = 0;
             Boxes.Add(player);
-            Clients.All.playerJoined(id, x, y, name);
+            Clients.All.playerJoined(id, x, y, name, color, text_color);
         }
 
         public void ShotFired(string id, string sourceId, float mag, float dir, float x, float y)

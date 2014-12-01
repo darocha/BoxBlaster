@@ -292,9 +292,10 @@
                 pewBox.PEW();
                 PewPews.push(pewBox);
 
+                //this should always be true...
                 if (this.id == MyBox.id)
-                    srShotFired(this.id,
-                                pewBox.id,
+                    srShotFired(pewBox.id, //id
+                                this.id, //sourceId
                                 pewBox.vector.magnitude,
                                 pewBox.vector.direction,
                                 pewBox.x,
@@ -1520,7 +1521,8 @@
 
         if (victim != null) {
             victim.deaths = deaths;
-            updatePlayerOnLeaderboard(victim);
+            victim.die();
+            //updatePlayerOnLeaderboard(victim); //die() does this
         }
 
     };
@@ -1534,7 +1536,7 @@
         }
         else //player isn't in boxes, so we should try reloading info
         {
-            hub.server.reloadPlayer(id);
+            srReloadPlayer(id);
         }
 
     };
@@ -1615,7 +1617,7 @@
         addPlayerToLeaderboard(MyBox);
         Boxes.push(MyBox);
 
-        hub.server.join(MyBox.id, MyBox.x, MyBox.y, MyBox.name);
+        srPlayerJoin(MyBox.id, MyBox.x, MyBox.y, MyBox.name, MyBox.color, MyBox.text_color);
 
     };
 
@@ -1623,7 +1625,9 @@
 
         //if new player (initial load), create and push new Box
         //otherwise, update info for existing player
-        if (arrayObjectIndexOf(Boxes, id, "id") == -1) {
+        var player = getObjectFromArray(Boxes, id);
+
+        if (player == null) {
             var player = new Box();
             player.id = id;
             player.x = x;
@@ -1635,10 +1639,9 @@
             player.text_color = text_color;
             addPlayerToLeaderboard(player);
             Boxes.push(player);
+            console.log("Existing Player Loaded!");
         }
         else {
-            var player = getObjectFromArray(Boxes, id);
-            player.id = id;
             player.x = x;
             player.y = y;
             player.name = name;
@@ -1647,6 +1650,7 @@
             player.color = color;
             player.text_color = text_color;
             updatePlayerOnLeaderboard(player);
+            console.log("Existing Player Re-Loaded!");
         }
 
     };
@@ -1660,7 +1664,7 @@
         }
         else //player isn't in boxes, so we should try reloading info
         {
-            hub.server.reloadWall(id);
+            srReloadWall(id);
         }
     };
 
@@ -1702,7 +1706,7 @@
         pew.id = id;
         pew.sourceId = sourceId;
 
-        PewPews.push()
+        PewPews.push(pew);
     };
 
     hub.client.explodePew = function (id) {
@@ -1714,7 +1718,17 @@
     var isSignalrReady = false;
     $.connection.hub.start().done(function () { isSignalrReady = true; });
 
+
     //define server calling functions
+    //called by hub.client.pickNickname to join to server
+    function srPlayerJoin(id, x, y, name, color, text_color) {
+        if (isSignalrReady) {
+            hub.server.playerJoin(id, x, y, name, color, text_color);
+            console.log("playerJoin called");
+        }
+
+    }
+
     //this is called by the pewpew collision handler when I am the killer
     function srKilledPlayer(killerId, victimId) {
         if (isSignalrReady) {
@@ -1741,6 +1755,27 @@
             hub.server.shotFired(id, sourceId, mag, dir, x, y);
             console.log("shotFired called");
         }
+
+    }
+
+    
+    //called by hub.client.playerMoved when a box isn't found locally
+    function srReloadPlayer(id) {
+        if (isSignalrReady) {
+            hub.server.reloadPlayer(id);
+            console.log("reloadPlayer called");
+        }
+
+
+    }
+
+    //called by hub.client.wallMoved when a wall isn't found locally
+    function srReloadWall(id) {
+        if (isSignalrReady) {
+            hub.server.reloadWall(id);
+            console.log("reloadWall called");
+        }
+
 
     }
 
