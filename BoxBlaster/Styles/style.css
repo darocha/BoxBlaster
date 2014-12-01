@@ -47,11 +47,24 @@
 }
 
 #wrapperDiv{
-    display:inline-block;
+    display: inline-block;
+    background: white;
+    /*z-index: -10;*//* This fucked up mousemove capture, go figure...*/
+    position: relative;
+    border: solid black 1px;
+    width: 600px;
+    height: 450px;
 } 
 
+#loadingGif{
+    z-index: -5;
+    position: absolute;
+    top: 217px;
+    left: 286px;
+}
+
 #canvas{
-    border: solid black 1px;
+    visibility: hidden;
 }
 
 h1{
@@ -98,4 +111,9 @@ input{
 table{
     width: 100%;
     border-collapse: collapse;
+}
+
+.wallButton{
+    width: 46%;
+    font-size: 9pt;
 }
