@@ -38,36 +38,35 @@ namespace BoxBlaster.Hubs
 	[HubName("blasterHub")]
 	public class Blaster : Hub
 	{
-		//private List<Box> Boxes { get; set; }
-		//private List<Wall> Walls { get; set; }
+		static List<Box> Boxes = new List<Box>();
+		static List<Wall> Walls = new List<Wall>();
+		//public List<Box> Boxes
+		//{
+		//    get {
+		//        List<Box> _boxes = new List<Box>();
 
-		public List<Box> Boxes
-		{
-			get {
-				List<Box> _boxes = new List<Box>();
+		//        foreach (Box box in Startup.BoxCache)
+		//        {
+		//            _boxes.Add(box);
+		//        }
 
-				foreach (Box box in Startup.BoxCache)
-				{
-					_boxes.Add(box);
-				}
+		//        return _boxes;
+		//    }
+		//}
+		//public List<Wall> Walls
+		//{
+		//    get
+		//    {
+		//        List<Wall> _walls = new List<Wall>();
 
-				return _boxes;
-			}
-		}
-		public List<Wall> Walls
-		{
-			get
-			{
-				List<Wall> _walls = new List<Wall>();
+		//        foreach (Wall wall in Startup.WallCache)
+		//        {
+		//            _walls.Add(wall);
+		//        }
 
-				foreach (Wall wall in Startup.WallCache)
-				{
-					_walls.Add(wall);
-				}
-
-				return _walls;
-			}
-		}
+		//        return _walls;
+		//    }
+		//}
 
 		public Blaster()
 		{
@@ -89,27 +88,25 @@ namespace BoxBlaster.Hubs
 
 		}
 
+		//public void SaveBox(Box box)
+		//{
+		//    Startup.BoxCache[box.id] = box;
+		//}
 
+		//public void SaveWall(Wall wall)
+		//{
+		//    Startup.WallCache[wall.id] = wall;
+		//}
 
-		public void SaveBox(Box box)
-		{
-			Startup.BoxCache[box.id] = box;
-		}
+		//public void RemoveBox(Box box)
+		//{
+		//    Startup.BoxCache.Remove(box.id);
+		//}
 
-		public void SaveWall(Wall wall)
-		{
-			Startup.WallCache[wall.id] = wall;
-		}
-
-		public void RemoveBox(Box box)
-		{
-			Startup.BoxCache.Remove(box.id);
-		}
-
-		public void RemoveWall(Wall wall)
-		{
-			Startup.WallCache.Remove(wall.id);
-		}
+		//public void RemoveWall(Wall wall)
+		//{
+		//    Startup.WallCache.Remove(wall.id);
+		//}
 
 		public override System.Threading.Tasks.Task OnConnected()
 		{
@@ -142,8 +139,8 @@ namespace BoxBlaster.Hubs
 			if (player != null && player.id != null)
 				Clients.Others.playerLeft(player.id);
 
-			//Boxes.Remove(player);
-			RemoveBox(player);
+			Boxes.Remove(player);
+			//RemoveBox(player);
 
 			return base.OnDisconnected(stopCalled);
 		}
@@ -213,8 +210,8 @@ namespace BoxBlaster.Hubs
 			player.text_color = text_color;
 			player.kills = 0;
 			player.deaths = 0;
-			//Boxes.Add(player);
-			SaveBox(player);
+			Boxes.Add(player);
+			//SaveBox(player);
 			Clients.All.playerJoined(id, x, y, name, color, text_color);
 		}
 
@@ -253,8 +250,8 @@ namespace BoxBlaster.Hubs
 				wall.width = width;
 				wall.height = height;
 
-				//Walls.Add(wall);
-				SaveWall(wall);
+				Walls.Add(wall);
+				//SaveWall(wall);
 
 				Clients.All.wallAdded(id, x, y, width, height);
 			}
@@ -264,8 +261,8 @@ namespace BoxBlaster.Hubs
 		{
 			var wall = Walls.Where(w => w.id == id).SingleOrDefault();
 
-			//Walls.Remove(wall);
-			RemoveWall(wall);
+			Walls.Remove(wall);
+			//RemoveWall(wall);
 
 			Clients.All.wallRemoved(id);
 		}
