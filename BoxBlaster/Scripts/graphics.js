@@ -1467,38 +1467,18 @@
         }
 
         //console.log("Count for box " + i + ": " + count);
-        Walls.push(PlayWall);
+        //Walls.push(PlayWall);
 
-        //push to signalr
+        //push to signalr. Wall is added by signalr to everyone on the callback to hub.client.wallAdded
+        srWallAdded(PlayWall.id, PlayWall.x, PlayWall.y, PlayWall.width, PlayWall.height);
     }
 
     function RemoveWallFromField(id) {
-        // count non-boundary walls
-        var wallCount = 0;
-        Walls.forEach(function (wall) {
-            if (!wall.isBoundary)
-                wallCount++;
-        });
-
-        //hard limit of 20 playfield walls
-        if (count >= 20)
-            return false;
-
-        var PlayWall = new Wall();
-        PlayWall.width = 40;
-        PlayWall.height = 40;
-        var collisions = true;
-        var count = 0;
-
-        while (collisions && count < 10) {
-            PlayWall.x = Math.floor(478 * Math.random() + 61);
-            PlayWall.y = Math.floor(328 * Math.random() + 61);
-            collisions = checkForSpawnCollisions(PlayWall);
-            count++;
+        // if array isn't empty, remove first wall via signalr
+        if(Walls.length != 0)
+        {
+            srWallRemoved(Walls[0].id);
         }
-
-        //console.log("Count for box " + i + ": " + count);
-        Walls.push(PlayWall);
     }
 
     ////////////////////////////////////////////////
@@ -1561,6 +1541,9 @@
             document.getElementById('colorPicker').addEventListener("input", changeColor);
             document.getElementById('volumeSlider').addEventListener("input", adjustVolume);
             document.getElementById('laserToggle').addEventListener("change", toggleLaser);
+            document.getElementById('addWall').addEventListener("click", AddWallToField);
+            document.getElementById('remWall').addEventListener("click", RemoveWallFromField);
+
 
             document.getElementById('colorPicker').removeAttribute("disabled");
             document.getElementById('volumeSlider').removeAttribute("disabled");
