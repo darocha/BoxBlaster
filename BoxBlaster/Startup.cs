@@ -10,8 +10,8 @@ namespace BoxBlaster
 {
     public class Startup
     {
-        public static Cache BoxCache;
-        public static Cache WallCache;
+        //public static Cache BoxCache;
+        //public static Cache WallCache;
 
         public void Configuration(IAppBuilder app)
         {
