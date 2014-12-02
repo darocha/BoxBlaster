@@ -208,6 +208,19 @@ namespace BoxBlaster.Hubs
 
 		}
 
+        public void PlayerChangedColor(string id, string color, string text_color)
+        {
+            var player = Boxes.Where(b => b.id == id).SingleOrDefault();
+
+            if (player != null && player.id != null)
+            {
+                player.color = color ;
+                player.text_color = text_color;
+                Clients.Others.playerChangedColor(id, color, text_color);
+            }
+
+        }
+
         public void PlayerRespawned(string id, float x, float y)
         {
             var player = Boxes.Where(b => b.id == id).SingleOrDefault();

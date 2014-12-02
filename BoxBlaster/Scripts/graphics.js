@@ -8,6 +8,7 @@
     function changeColor() {
         MyBox.color = document.getElementById('colorPicker').value;
         MyBox.text_color = getComplementaryColor(MyBox.color);
+        srPlayerChangedColor(MyBox.id, MyBox.color, MyBox.text_color)
     }
 
     function toggleLaser() {
@@ -1487,9 +1488,16 @@
 
     function RemoveWallFromField() {
         // if array isn't empty, remove first wall via signalr
-        if (Walls.length != 0) {
-            console.log("RemoveWallFromField called :" + Walls[0].id);
-            srWallRemoved(Walls[0].id);
+        var wallid;
+
+        Walls.forEach(function (wall) {
+            if (!wall.isBoundary && wallid == null)
+                wallid = wall.id;
+        });
+
+        if (wallid != null) {
+            console.log("RemoveWallFromField called :" + wallid);
+            srWallRemoved(wallid);
         }
     }
 
@@ -1612,7 +1620,7 @@
         }
     };
 
-    hub.client.playerColorChanged = function (id, color, text_color) {
+    hub.client.playerChangedColor = function (id, color, text_color) {
         var player = getObjectFromArray(Boxes, id);
 
         if (player != null) {
@@ -1714,7 +1722,7 @@
             Walls.push(wall);
         }
         else { //we already have the wall, so just update it
-            wall.id = id;
+            //wall.id = id;
             wall.x = x;
             wall.y = y;
             wall.width = width;
@@ -1723,8 +1731,11 @@
     };
 
     hub.client.wallRemoved = function (id) {
-        var wall = getObjectFromArray(Walls, id);
 
+        console.log("hub.client.wallRemoved called: " + id)
+        console.log(Walls);
+        var wall = getObjectFromArray(Walls, id);
+        console.log(wall);
         if (wall != null) {
             removeObjectFromArray(Walls, wall);
         }
@@ -1785,6 +1796,15 @@
         if (isSignalrReady) {
             hub.server.playerRespawned(id, x, y);
             console.log("playerRespawned called");
+        }
+
+    }
+
+    //called by change color event handler
+    function srPlayerChangedColor(id, color, text_color) {
+        if (isSignalrReady) {
+            hub.server.playerChangedColor(id, color, text_color);
+            console.log("playerChangedColor called");
         }
 
     }
