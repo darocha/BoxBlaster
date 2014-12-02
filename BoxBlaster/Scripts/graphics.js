@@ -290,6 +290,10 @@
 
             this.firePew = function () {
 
+                //you must be alive to shoot...
+                if (this.isDead)
+                    return;
+
                 //selective loggin
                 console.log(this.text_color);
 
