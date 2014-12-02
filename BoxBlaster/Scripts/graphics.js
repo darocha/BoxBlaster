@@ -1643,7 +1643,17 @@
 
         //Get player nickname
         while (MyBox.name != null && (MyBox.name.length < 4 || MyBox.name.length > 8))
-            MyBox.name = prompt("Please Enter your nickname (4 to 8 characters)");
+            MyBox.name = prompt("WELCOME TO BOXBLASTER!\n\n" +
+                                "Movement:\n" +
+                                "W or ↑ (UP)\n" +
+                                "S or ↓ (DOWN)\n" +
+                                "A or ← (LEFT)\n" +
+                                "D or → (RIGHT)\n\n" +
+                                "Shoot:\n" +
+                                "Aim with mouse\n" +
+                                "Click to fire\n" +
+                                "Space bar toggles auto fire!\n\n" +
+                                "Enter your nickname (4 to 8 characters)");
 
         if (MyBox.name == null) {
             MyBox.name = randomBetween(10000, 99999);
