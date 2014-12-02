@@ -1,5 +1,6 @@
 ﻿$(function () {
 
+
     function adjustVolume() {
         masterVolume = document.getElementById('volumeSlider').value;
     }
@@ -559,7 +560,7 @@
 
             // play the pewpew sound
             this.PEW = function () {
-                var pew = new Audio("Audio/pew.wav");
+                var pew = new Audio("Audio/pew.mp3");
                 //this is loud and annoying, the .75 makes it a bit less so
                 pew.volume = getVolumeFactor(MyBox, this) * .75;
                 pew.volume *= masterVolume;
@@ -568,7 +569,7 @@
 
             // play the pewpew sound
             this.SPLAT = function () {
-                var splat = new Audio("Audio/splat_clip.wav");
+                var splat = new Audio("Audio/splat.mp3");
                 splat.volume = getVolumeFactor(MyBox, this) * .5;
                 splat.volume *= masterVolume;
                 splat.play();
