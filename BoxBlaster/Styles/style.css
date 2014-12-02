@@ -57,7 +57,7 @@
 } 
 
 #loadingGif{
-    z-index: -5;
+    z-index: 5;
     position: absolute;
     top: 217px;
     left: 286px;

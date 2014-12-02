@@ -1595,7 +1595,9 @@
             document.getElementById('addWall').removeAttribute("disabled");
             document.getElementById('remWall').removeAttribute("disabled");
 
+            //show the canvas, hide the loading animation
             document.getElementById('canvas').style.visibility = "visible";
+            document.getElementById('loadingGif').style.display = "none";
 
             window.setInterval(render, 1000 / targetFPS);
             window.setInterval(movebox, 40);
