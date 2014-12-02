@@ -1,5 +1,6 @@
 ﻿$(function () {
 
+
     function adjustVolume() {
         masterVolume = document.getElementById('volumeSlider').value;
     }
@@ -7,6 +8,7 @@
     function changeColor() {
         MyBox.color = document.getElementById('colorPicker').value;
         MyBox.text_color = getComplementaryColor(MyBox.color);
+        srPlayerChangedColor(MyBox.id, MyBox.color, MyBox.text_color)
     }
 
     function toggleLaser() {
@@ -119,10 +121,13 @@
             this.milsToRespawn = 5000;
             this.lastTOD = new Date();
             this.DrawToCanvasContext = function (ctx) {
-                if (this.isDead && ((new Date() - this.lastTOD) > this.milsToRespawn)) {
-                    this.respawn();
-                    return;
-                }
+
+                //only respawn myself
+                if (this.id == MyBox.id)
+                    if (this.isDead && ((new Date() - this.lastTOD) > this.milsToRespawn)) {
+                        this.respawn();
+                        return;
+                    }
 
                 if (!this.isDead) {
                     //execute this code if player is alive
@@ -166,6 +171,8 @@
 
                     //add countdown
                     var counter = Math.ceil((this.milsToRespawn - (new Date() - this.lastTOD)) / 1000);
+                    if (counter < 0)
+                        counter = 0;
                     ctx.fillText(counter, this.x, this.y, this.width);
 
                 }
@@ -221,6 +228,10 @@
                     collisions = checkForSpawnCollisions(this);
                     count++;
                 }
+
+                //notify signalr that you moved
+                srPlayerRespawned(this.id, this.x, this.y);
+
                 console.log(this.name + " respawned! Took " + count + " tries!");
             }
 
@@ -396,7 +407,7 @@
                 }
 
                 checkForCollisions(this);
-                srWallMoved(this.id, x, y);
+                srWallMoved(this.id, this.x, this.y);
             };
 
             // what happens when this wall hits something
@@ -559,7 +570,7 @@
 
             // play the pewpew sound
             this.PEW = function () {
-                var pew = new Audio("Audio/pew.wav");
+                var pew = new Audio("Audio/pew.mp3");
                 //this is loud and annoying, the .75 makes it a bit less so
                 pew.volume = getVolumeFactor(MyBox, this) * .75;
                 pew.volume *= masterVolume;
@@ -568,7 +579,7 @@
 
             // play the pewpew sound
             this.SPLAT = function () {
-                var splat = new Audio("Audio/splat_clip.wav");
+                var splat = new Audio("Audio/splat.mp3");
                 splat.volume = getVolumeFactor(MyBox, this) * .5;
                 splat.volume *= masterVolume;
                 splat.play();
@@ -1277,7 +1288,7 @@
     }
 
     function removePlayerFromLeaderboard(box) {
-        var leaderboard = document.getElementById(leaderBoard);
+        var leaderboard = document.getElementById("scores");
         var player = document.getElementById(box.id);
         leaderboard.removeChild(player);
     }
@@ -1442,6 +1453,8 @@
     }
 
     function AddWallToField() {
+
+        console.log("addWall called");
         // count non-boundary walls
         var wallCount = 0;
         Walls.forEach(function (wall) {
@@ -1473,11 +1486,18 @@
         srWallAdded(PlayWall.id, PlayWall.x, PlayWall.y, PlayWall.width, PlayWall.height);
     }
 
-    function RemoveWallFromField(id) {
+    function RemoveWallFromField() {
         // if array isn't empty, remove first wall via signalr
-        if(Walls.length != 0)
-        {
-            srWallRemoved(Walls[0].id);
+        var wallid;
+
+        Walls.forEach(function (wall) {
+            if (!wall.isBoundary && wallid == null)
+                wallid = wall.id;
+        });
+
+        if (wallid != null) {
+            console.log("RemoveWallFromField called :" + wallid);
+            srWallRemoved(wallid);
         }
     }
 
@@ -1513,6 +1533,22 @@
         if (player != null) {
             player.x = x;
             player.y = y;
+            player.isDead = false;
+        }
+        else //player isn't in boxes, so we should try reloading info
+        {
+            srReloadPlayer(id);
+        }
+
+    };
+
+    hub.client.playerRespawned = function (id, x, y) {
+        var player = getObjectFromArray(Boxes, id);
+
+        if (player != null) {
+            player.x = x;
+            player.y = y;
+            player.isDead = false;
         }
         else //player isn't in boxes, so we should try reloading info
         {
@@ -1524,8 +1560,12 @@
     hub.client.playerLeft = function (id) {
         var player = getObjectFromArray(Boxes, id);
 
-        if (player != null)
-            removeObjectFromArray(Boxes, player);
+        if (player != null) {
+            removePlayerFromLeaderboard(player);
+            removeObjectFromArray(Boxes, player);        
+        }
+
+        console.log("playerLeft called: " + id);
     };
 
     hub.client.playerJoined = function (id, x, y, name) {
@@ -1544,10 +1584,13 @@
             document.getElementById('addWall').addEventListener("click", AddWallToField);
             document.getElementById('remWall').addEventListener("click", RemoveWallFromField);
 
-
+            //enable menu controls
             document.getElementById('colorPicker').removeAttribute("disabled");
             document.getElementById('volumeSlider').removeAttribute("disabled");
             document.getElementById('laserToggle').removeAttribute("disabled");
+            document.getElementById('addWall').removeAttribute("disabled");
+            document.getElementById('remWall').removeAttribute("disabled");
+
             document.getElementById('canvas').style.visibility = "visible";
 
             window.setInterval(render, 1000 / targetFPS);
@@ -1577,7 +1620,7 @@
         }
     };
 
-    hub.client.playerColorChanged = function (id, color, text_color) {
+    hub.client.playerChangedColor = function (id, color, text_color) {
         var player = getObjectFromArray(Boxes, id);
 
         if (player != null) {
@@ -1598,15 +1641,14 @@
         while (MyBox.name != null && (MyBox.name.length < 4 || MyBox.name.length > 8))
             MyBox.name = prompt("Please Enter your nickname (4 to 8 characters)");
 
-        if (MyBox.name == null){
+        if (MyBox.name == null) {
             MyBox.name = randomBetween(10000, 99999);
             alert("Problem getting nickname, using random number instead... Sorry =(")
         }
-        else
-        {
+        else {
             MyBox.name = MyBox.name.toUpperCase();
         }
-        
+
 
         MyBox.respawn();
         addPlayerToLeaderboard(MyBox);
@@ -1680,7 +1722,7 @@
             Walls.push(wall);
         }
         else { //we already have the wall, so just update it
-            wall.id = id;
+            //wall.id = id;
             wall.x = x;
             wall.y = y;
             wall.width = width;
@@ -1689,8 +1731,11 @@
     };
 
     hub.client.wallRemoved = function (id) {
-        var wall = getObjectFromArray(Walls, id);
 
+        console.log("hub.client.wallRemoved called: " + id)
+        console.log(Walls);
+        var wall = getObjectFromArray(Walls, id);
+        console.log(wall);
         if (wall != null) {
             removeObjectFromArray(Walls, wall);
         }
@@ -1721,7 +1766,7 @@
     function srPlayerJoin(id, x, y, name, color, text_color) {
         if (isSignalrReady) {
             console.log("playerJoin called");
-            hub.server.playerJoin(id, x, y, name, color, text_color);        
+            hub.server.playerJoin(id, x, y, name, color, text_color);
         }
         console.log(isSignalrReady);
     }
@@ -1746,6 +1791,24 @@
 
     }
 
+    //called by box.respawn when I am killed
+    function srPlayerRespawned(id, x, y) {
+        if (isSignalrReady) {
+            hub.server.playerRespawned(id, x, y);
+            console.log("playerRespawned called");
+        }
+
+    }
+
+    //called by change color event handler
+    function srPlayerChangedColor(id, color, text_color) {
+        if (isSignalrReady) {
+            hub.server.playerChangedColor(id, color, text_color);
+            console.log("playerChangedColor called");
+        }
+
+    }
+
     //called by Box.firePew when I shoot
     function srShotFired(id, sourceId, mag, dir, x, y) {
         if (isSignalrReady) {
@@ -1755,7 +1818,7 @@
 
     }
 
-    
+
     //called by hub.client.playerMoved when a box isn't found locally
     function srReloadPlayer(id) {
         if (isSignalrReady) {
@@ -1799,7 +1862,7 @@
     function srWallRemoved(id) {
         if (isSignalrReady) {
             hub.server.wallRemoved(id);
-            console.log("wallRemoved called");
+            console.log("wallRemoved called: " + id);
         }
 
     }

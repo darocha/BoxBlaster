@@ -5,6 +5,7 @@ using System.Web;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using System.Web.Caching;
+using System.Threading.Tasks;
 
 namespace BoxBlaster.Hubs
 {
@@ -110,39 +111,47 @@ namespace BoxBlaster.Hubs
 
 		public override System.Threading.Tasks.Task OnConnected()
 		{
-			//loop through walls, adding to client
-			foreach (Wall wall in Walls)
-			{
-				Clients.Caller.wallAdded(wall.id, wall.x, wall.y, wall.width, wall.height);
-			}
 
-			//loop through boxes, adding to client
-			foreach (Box box in Boxes)
-			{
-				Clients.Caller.existingPlayerLoad(box.id, box.x, box.y, box.name, box.kills, box.deaths, box.color, box.text_color);
-			}
+            Task task = Task.Factory.StartNew(() =>
+            {
+                //loop through walls, adding to client
+                foreach (Wall wall in Walls)
+                {
+                    Clients.Caller.wallAdded(wall.id, wall.x, wall.y, wall.width, wall.height);
+                }
 
-			//generate userid, prompt user for nickname
-			var id = Guid.NewGuid().ToString();
-			Clients.Caller.pickNickname(id);
+                //loop through boxes, adding to client
+                foreach (Box box in Boxes)
+                {
+                    Clients.Caller.existingPlayerLoad(box.id, box.x, box.y, box.name, box.kills, box.deaths, box.color, box.text_color);
+                }
 
-			return base.OnConnected();
+                //generate userid, prompt user for nickname
+                var id = Guid.NewGuid().ToString();
+                Clients.Caller.pickNickname(id);
+            });
+			//return base.OnConnected();
+            return task;
 
 		}
 
 		public override System.Threading.Tasks.Task OnDisconnected(bool stopCalled)
 		{
+            Task task = Task.Factory.StartNew(() =>
+            {
 			var connectionId = Context.ConnectionId;
 			var player = Boxes.Where(b => b.connectionId == connectionId).SingleOrDefault();
 
 			//tell everyone that the player left
 			if (player != null && player.id != null)
-				Clients.Others.playerLeft(player.id);
+				Clients.All.playerLeft(player.id);
 
 			Boxes.Remove(player);
 			//RemoveBox(player);
-
-			return base.OnDisconnected(stopCalled);
+            });
+            
+            return task;
+			//return base.OnDisconnected(stopCalled);
 		}
 
 		public void ReloadPlayer(string id)
@@ -199,6 +208,32 @@ namespace BoxBlaster.Hubs
 
 		}
 
+        public void PlayerChangedColor(string id, string color, string text_color)
+        {
+            var player = Boxes.Where(b => b.id == id).SingleOrDefault();
+
+            if (player != null && player.id != null)
+            {
+                player.color = color ;
+                player.text_color = text_color;
+                Clients.Others.playerChangedColor(id, color, text_color);
+            }
+
+        }
+
+        public void PlayerRespawned(string id, float x, float y)
+        {
+            var player = Boxes.Where(b => b.id == id).SingleOrDefault();
+
+            if (player != null && player.id != null)
+            {
+                player.x = x;
+                player.y = y;
+                Clients.Others.playerRespawned(id, x, y);
+            }
+
+        }
+
 		public void PlayerJoin(string id, float x, float y, string name, string color, string text_color)
 		{
 			var player = new Box();
@@ -210,6 +245,7 @@ namespace BoxBlaster.Hubs
 			player.text_color = text_color;
 			player.kills = 0;
 			player.deaths = 0;
+            player.connectionId = Context.ConnectionId;
 			Boxes.Add(player);
 			//SaveBox(player);
 			Clients.All.playerJoined(id, x, y, name, color, text_color);
@@ -241,7 +277,7 @@ namespace BoxBlaster.Hubs
 
 		public void WallAdded(string id, float x, float y, int width, int height)
 		{
-			if (Walls.Count >= 20)
+			if (Walls.Count < 20)
 			{
 				Wall wall = new Wall();
 				wall.id = id;

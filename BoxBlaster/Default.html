@@ -20,19 +20,20 @@
                 <h2>MENU</h2>
                 <div class="control" id="volumeControl">
                     <label>Volume:</label>
-                    <input type="range" min="0" max="1" step="0.05" id="volumeSlider" value="1"/>
+                    <input type="range" min="0" max="1" step="0.05" id="volumeSlider" value="1" disabled />
                 </div>
                 <div class="control" id="colorControl">
                     <label>Color:</label>
-                    <input type="color" value="#0000FF" id="colorPicker" />
+                    <input type="color" value="#0000FF" id="colorPicker" disabled/>
                 </div>
                 <div class="control" id="laserControl">
                     <label>Enable Laser Aim:</label>
-                    <input type="checkbox" checked id="laserToggle" />
+                    <input type="checkbox" checked id="laserToggle" disabled />
                 </div>
                 <div class="control" id="wallControl">
-                    <button class="wallButton" type="button" id="addWall">Add Wall</button> 
-                    <button class="wallButton" type="button" id="remWall">Rem Wall</button>
+                    <label>Walls:</label>
+                    <button class="wallButton" type="button" id="addWall" disabled>+1</button> 
+                    <button class="wallButton" type="button" id="remWall" disabled>-1</button>
                 </div>
                 <div id="leaderBoard">
                     <p>Leaderboard:</p>
@@ -47,8 +48,18 @@
             </div>
         </div>
     </div>
-    
 
+    <audio id="boom">
+        <source src="Audio/Boom.mp3" type="audio/mpeg" />
+    </audio>
+
+    <audio id="pew">
+        <source src="Audio/pew.mp3" type="audio/mpeg" />
+    </audio>
+
+    <audio id="splat">
+        <source src="Audio/splat.mp3" type="audio/mpeg" />
+    </audio>
     <script src="Scripts/jquery-2.1.1.min.js"></script>
     <script src="Scripts/jquery.signalR-2.1.2.min.js"></script>
     <script src="signalr/hubs"></script>
