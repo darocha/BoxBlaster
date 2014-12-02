@@ -406,7 +406,7 @@
                 }
 
                 checkForCollisions(this);
-                srWallMoved(this.id, x, y);
+                srWallMoved(this.id, this.x, this.y);
             };
 
             // what happens when this wall hits something
@@ -1452,6 +1452,8 @@
     }
 
     function AddWallToField() {
+
+        console.log("addWall called");
         // count non-boundary walls
         var wallCount = 0;
         Walls.forEach(function (wall) {
@@ -1483,9 +1485,10 @@
         srWallAdded(PlayWall.id, PlayWall.x, PlayWall.y, PlayWall.width, PlayWall.height);
     }
 
-    function RemoveWallFromField(id) {
+    function RemoveWallFromField() {
         // if array isn't empty, remove first wall via signalr
         if (Walls.length != 0) {
+            console.log("RemoveWallFromField called :" + Walls[0].id);
             srWallRemoved(Walls[0].id);
         }
     }
@@ -1573,10 +1576,13 @@
             document.getElementById('addWall').addEventListener("click", AddWallToField);
             document.getElementById('remWall').addEventListener("click", RemoveWallFromField);
 
-
+            //enable menu controls
             document.getElementById('colorPicker').removeAttribute("disabled");
             document.getElementById('volumeSlider').removeAttribute("disabled");
             document.getElementById('laserToggle').removeAttribute("disabled");
+            document.getElementById('addWall').removeAttribute("disabled");
+            document.getElementById('remWall').removeAttribute("disabled");
+
             document.getElementById('canvas').style.visibility = "visible";
 
             window.setInterval(render, 1000 / targetFPS);
@@ -1836,7 +1842,7 @@
     function srWallRemoved(id) {
         if (isSignalrReady) {
             hub.server.wallRemoved(id);
-            console.log("wallRemoved called");
+            console.log("wallRemoved called: " + id);
         }
 
     }

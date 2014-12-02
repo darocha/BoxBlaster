@@ -264,7 +264,7 @@ namespace BoxBlaster.Hubs
 
 		public void WallAdded(string id, float x, float y, int width, int height)
 		{
-			if (Walls.Count >= 20)
+			if (Walls.Count < 20)
 			{
 				Wall wall = new Wall();
 				wall.id = id;
