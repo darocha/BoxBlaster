@@ -120,10 +120,13 @@
             this.milsToRespawn = 5000;
             this.lastTOD = new Date();
             this.DrawToCanvasContext = function (ctx) {
-                if (this.isDead && ((new Date() - this.lastTOD) > this.milsToRespawn)) {
-                    this.respawn();
-                    return;
-                }
+
+                //only respawn myself
+                if (this.id == MyBox.id)
+                    if (this.isDead && ((new Date() - this.lastTOD) > this.milsToRespawn)) {
+                        this.respawn();
+                        return;
+                    }
 
                 if (!this.isDead) {
                     //execute this code if player is alive
@@ -167,6 +170,8 @@
 
                     //add countdown
                     var counter = Math.ceil((this.milsToRespawn - (new Date() - this.lastTOD)) / 1000);
+                    if (counter < 0)
+                        counter = 0;
                     ctx.fillText(counter, this.x, this.y, this.width);
 
                 }
@@ -222,6 +227,10 @@
                     collisions = checkForSpawnCollisions(this);
                     count++;
                 }
+
+                //notify signalr that you moved
+                srPlayerRespawned(this.id, this.x, this.y);
+
                 console.log(this.name + " respawned! Took " + count + " tries!");
             }
 
@@ -1278,7 +1287,7 @@
     }
 
     function removePlayerFromLeaderboard(box) {
-        var leaderboard = document.getElementById(leaderBoard);
+        var leaderboard = document.getElementById("scores");
         var player = document.getElementById(box.id);
         leaderboard.removeChild(player);
     }
@@ -1476,8 +1485,7 @@
 
     function RemoveWallFromField(id) {
         // if array isn't empty, remove first wall via signalr
-        if(Walls.length != 0)
-        {
+        if (Walls.length != 0) {
             srWallRemoved(Walls[0].id);
         }
     }
@@ -1514,6 +1522,22 @@
         if (player != null) {
             player.x = x;
             player.y = y;
+            player.isDead = false;
+        }
+        else //player isn't in boxes, so we should try reloading info
+        {
+            srReloadPlayer(id);
+        }
+
+    };
+
+    hub.client.playerRespawned = function (id, x, y) {
+        var player = getObjectFromArray(Boxes, id);
+
+        if (player != null) {
+            player.x = x;
+            player.y = y;
+            player.isDead = false;
         }
         else //player isn't in boxes, so we should try reloading info
         {
@@ -1525,8 +1549,12 @@
     hub.client.playerLeft = function (id) {
         var player = getObjectFromArray(Boxes, id);
 
-        if (player != null)
-            removeObjectFromArray(Boxes, player);
+        if (player != null) {
+            removePlayerFromLeaderboard(player);
+            removeObjectFromArray(Boxes, player);        
+        }
+
+        console.log("playerLeft called: " + id);
     };
 
     hub.client.playerJoined = function (id, x, y, name) {
@@ -1599,15 +1627,14 @@
         while (MyBox.name != null && (MyBox.name.length < 4 || MyBox.name.length > 8))
             MyBox.name = prompt("Please Enter your nickname (4 to 8 characters)");
 
-        if (MyBox.name == null){
+        if (MyBox.name == null) {
             MyBox.name = randomBetween(10000, 99999);
             alert("Problem getting nickname, using random number instead... Sorry =(")
         }
-        else
-        {
+        else {
             MyBox.name = MyBox.name.toUpperCase();
         }
-        
+
 
         MyBox.respawn();
         addPlayerToLeaderboard(MyBox);
@@ -1722,7 +1749,7 @@
     function srPlayerJoin(id, x, y, name, color, text_color) {
         if (isSignalrReady) {
             console.log("playerJoin called");
-            hub.server.playerJoin(id, x, y, name, color, text_color);        
+            hub.server.playerJoin(id, x, y, name, color, text_color);
         }
         console.log(isSignalrReady);
     }
@@ -1747,6 +1774,15 @@
 
     }
 
+    //called by box.respawn when I am killed
+    function srPlayerRespawned(id, x, y) {
+        if (isSignalrReady) {
+            hub.server.playerRespawned(id, x, y);
+            console.log("playerRespawned called");
+        }
+
+    }
+
     //called by Box.firePew when I shoot
     function srShotFired(id, sourceId, mag, dir, x, y) {
         if (isSignalrReady) {
@@ -1756,7 +1792,7 @@
 
     }
 
-    
+
     //called by hub.client.playerMoved when a box isn't found locally
     function srReloadPlayer(id) {
         if (isSignalrReady) {
