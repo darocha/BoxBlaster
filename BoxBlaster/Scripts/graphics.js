@@ -113,18 +113,18 @@
             this.move_S = false,
             this.move_W = false,
             this.move_E = false;
-            this.speed = Math.ceil(125 / targetFPS);
+            this.speed = 5;
             this.color = "blue";
             this.aim_color = "red";
             this.text_color = "white";
             this.isDead = false;
             this.milsToRespawn = 5000;
-            this.lastTOD = new Date();
+            this.lastTOD = new Date().getUTCDate();
             this.DrawToCanvasContext = function (ctx) {
 
                 //only respawn myself
                 if (this.id == MyBox.id)
-                    if (this.isDead && ((new Date() - this.lastTOD) > this.milsToRespawn)) {
+                    if (this.isDead && ((new Date().getUTCDate() - this.lastTOD) > this.milsToRespawn)) {
                         this.respawn();
                         return;
                     }
@@ -170,7 +170,7 @@
                     ctx.fillText("X(", this.x - this.width / 2, this.y - this.height / 4, this.width);
 
                     //add countdown
-                    var counter = Math.ceil((this.milsToRespawn - (new Date() - this.lastTOD)) / 1000);
+                    var counter = Math.ceil((this.milsToRespawn - (new Date().getUTCDate() - this.lastTOD)) / 1000);
                     if (counter < 0)
                         counter = 0;
                     ctx.fillText(counter, this.x, this.y, this.width);
@@ -336,16 +336,18 @@
                 }
             }
 
-            this.die = function (pewpew) {
+            this.die = function (TOD) {
                 this.milsToRespawn = 5000;
-                this.lastTOD = new Date();
+                this.lastTOD = TOD || new Date().getUTCDate();
                 this.isDead = true;
                 this.move_N = false;
                 this.move_S = false;
                 this.move_W = false;
                 this.move_E = false;
-                this.deaths++;
-                updatePlayerOnLeaderboard(this);
+
+                //Only signalr updates deaths and leaderboard
+                //this.deaths++;
+                //updatePlayerOnLeaderboard(this);
 
             }
         }
@@ -363,7 +365,7 @@
             this.width = 30;
             this.height = 30;
             this.color = "black";
-            this.speed = Math.ceil(25 / targetFPS);
+            this.speed = 1;
             this.isBoundary = false;
 
             //draw this wall to the context
@@ -499,13 +501,20 @@
                         //nice shootin tex!
                         if (!objHit.isDead) {
                             objHit.die(this);
-                            var killer = getObjectFromArray(Boxes, this.sourceId);
-                            killer.kills++;
-                            updatePlayerOnLeaderboard(killer);
+
+                            //signalr is the only one updating kills, deaths, and leaderboard
+                            //var killer = getObjectFromArray(Boxes, this.sourceId);
+                            //killer.kills++;
+                            //updatePlayerOnLeaderboard(killer);
 
                             //if the player did it, notify signalr
                             if (this.sourceId == MyBox.id)
-                                srKilledPlayer(this.id, objHit.id)
+                                srKilledPlayer(this.sourceId, objHit.id)
+
+                            //If the player is the victim, notify signalr -- decided kill should report
+                            //.. could get wonky if I minimize or whatever (zombie player...)
+                            //if (objHit.id == MyBox.id)
+                                
                         }
                         break;
                     case "PewPew": //both pewpews explode!
@@ -780,7 +789,7 @@
     var Walls = new Array();
 
     var counter = 0;
-    var lastMessageTime = new Date();
+    var lastMessageTime = new Date().getUTCDate();
 
     //var x = 25, y = 25;
     //var aim_x, aim_y;
@@ -897,7 +906,7 @@
 
 
     function mousemove(event) {
-        var now = new Date();
+        var now = new Date().getUTCDate();
 
         //console.log(now + " " + lastMessageTime)
         if (now - lastMessageTime >= 40) {
@@ -1188,8 +1197,9 @@
                 break;
             case "Wall": //walls can collide with other walls or with boxes
                 Boxes.forEach(function (box) {
-                    if (doObjectsIntersect(box, obj))
-                        obj.handleCollision(box);
+                    if (box.id != MyBox.id) //can't push a box into myself
+                        if (doObjectsIntersect(box, obj))
+                            obj.handleCollision(box);
                 });
                 if (Walls != null)
                     Walls.forEach(function (wall) {
@@ -1514,7 +1524,7 @@
 
     var hub = $.connection.blasterHub;
 
-    hub.client.playerKilled = function (killerId, victimId, kills, deaths) {
+    hub.client.playerKilled = function (killerId, victimId, kills, deaths, TOD) {
         var killer = getObjectFromArray(Boxes, killerId);
         var victim = getObjectFromArray(Boxes, victimId);
 
@@ -1525,8 +1535,8 @@
 
         if (victim != null) {
             victim.deaths = deaths;
-            victim.die();
-            //updatePlayerOnLeaderboard(victim); //die() does this
+            victim.die(TOD);
+            updatePlayerOnLeaderboard(victim); //die() does this
         }
 
     };
@@ -1566,7 +1576,7 @@
 
         if (player != null) {
             removePlayerFromLeaderboard(player);
-            removeObjectFromArray(Boxes, player);        
+            removeObjectFromArray(Boxes, player);
         }
 
         console.log("playerLeft called: " + id);
@@ -1788,6 +1798,8 @@
     }
 
     //this is called by the pewpew collision handler when I am the killer
+    //scratch that... called when I am the victim
+    //scatch the scratch... I'll reports my own kills, not deaths
     function srKilledPlayer(killerId, victimId) {
         if (isSignalrReady) {
             hub.server.killedPlayer(killerId, victimId);
@@ -1861,7 +1873,6 @@
             hub.server.wallMoved(id, x, y);
             console.log("wallMoved called");
         }
-
 
     }
 

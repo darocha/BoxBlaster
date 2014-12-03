@@ -192,7 +192,7 @@ namespace BoxBlaster.Hubs
 			}
 
 			if (kFound && vFound)
-				Clients.Others.playerKilled(killerId, victimId, killer.kills, victim.deaths);
+				Clients.All.playerKilled(killerId, victimId, killer.kills, victim.deaths, DateTime.Now.ToUniversalTime());
 		}
 
 		public void PlayerMoved(string id, float x, float y)
