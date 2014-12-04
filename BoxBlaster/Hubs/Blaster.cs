@@ -192,7 +192,7 @@ namespace BoxBlaster.Hubs
 			}
 
 			if (kFound && vFound)
-				Clients.All.playerKilled(killerId, victimId, killer.kills, victim.deaths, DateTime.Now.ToUniversalTime());
+				Clients.All.playerKilled(killerId, victimId, killer.kills, victim.deaths, ConvertToUnixTimestamp(DateTime.Now.ToUniversalTime()));
 		}
 
 		public void PlayerMoved(string id, float x, float y)
@@ -302,5 +302,12 @@ namespace BoxBlaster.Hubs
 
 			Clients.All.wallRemoved(id);
 		}
+
+        public static double ConvertToUnixTimestamp(DateTime date)
+        {
+            DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            TimeSpan diff = date.ToUniversalTime() - origin.ToUniversalTime();
+            return Math.Floor(diff.TotalMilliseconds);
+        }
 	}
 }

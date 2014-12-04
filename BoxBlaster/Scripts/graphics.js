@@ -63,8 +63,8 @@
 
             this.GetRelativeEndPoint = function () {
                 var endpoint = new Point();
-                endpoint.y += this.magnitude * Math.sin(this.direction);
-                endpoint.x += this.magnitude * Math.cos(this.direction);
+                endpoint.y = this.magnitude * Math.sin(this.direction);
+                endpoint.x = this.magnitude * Math.cos(this.direction);
                 return endpoint;
             }
 
@@ -119,12 +119,12 @@
             this.text_color = "white";
             this.isDead = false;
             this.milsToRespawn = 5000;
-            this.lastTOD = new Date().getUTCDate();
+            this.lastTOD = NowUTC();
             this.DrawToCanvasContext = function (ctx) {
 
                 //only respawn myself
                 if (this.id == MyBox.id)
-                    if (this.isDead && ((new Date().getUTCDate() - this.lastTOD) > this.milsToRespawn)) {
+                    if (this.isDead && ((NowUTC() - this.lastTOD) > this.milsToRespawn)) {
                         this.respawn();
                         return;
                     }
@@ -170,7 +170,7 @@
                     ctx.fillText("X(", this.x - this.width / 2, this.y - this.height / 4, this.width);
 
                     //add countdown
-                    var counter = Math.ceil((this.milsToRespawn - (new Date().getUTCDate() - this.lastTOD)) / 1000);
+                    var counter = Math.ceil((this.milsToRespawn - (NowUTC() - this.lastTOD)) / 1000);
                     if (counter < 0)
                         counter = 0;
                     ctx.fillText(counter, this.x, this.y, this.width);
@@ -303,6 +303,8 @@
                 pewBox.sourceId = this.id;
                 pewBox.x = this.x;
                 pewBox.y = this.y;
+                pewBox.startx = this.x;
+                pewBox.starty = this.y;
                 pewBox.MoveMe();
                 pewBox.PEW();
                 PewPews.push(pewBox);
@@ -337,8 +339,12 @@
             }
 
             this.die = function (TOD) {
+
+                console.log(TOD);
+                console.log(NowUTC());
+
                 this.milsToRespawn = 5000;
-                this.lastTOD = TOD || new Date().getUTCDate();
+                this.lastTOD = TOD || NowUTC(); //TOD
                 this.isDead = true;
                 this.move_N = false;
                 this.move_S = false;
@@ -445,10 +451,14 @@
             this.sourceId = "";
             this.x = 0;
             this.y = 0;
+            this.startx = 0;
+            this.starty = 0;
             this.width = 4;
             this.height = 4;
             this.color = "black";
             this.vector = vector || new Vector();
+            this.spawnTime = NowUTC() - 40;
+
             this.DrawToCanvasContext = function (ctx) {
                 //draw rectangle
                 ctx.fillStyle = this.color;
@@ -482,7 +492,23 @@
 
 
             this.MoveMe = function () {
+
+                //get the age of the pewpew, divide by 40 to get how many frames old (40 milliseconds/frame)
+                //too much trouble, relative movement has issues but collision detection works
+                //much better
+
+                //var factor = (NowUTC() - this.spawnTime) / 40;
+                //var transformed = new Vector(this.vector.magnitude * factor, this.vector.direction);
+                //var xy = transformed.GetRelativeEndPoint();
+                //console.log(transformed);
+                //console.log(this.vector);
+                //this.x = this.startx + xy.x;
+                //this.y = this.starty + xy.y;
+
+
                 var nextxy = this.vector.GetRelativeEndPoint();
+                //console.log(xy);
+                //console.log(nextxy);
                 this.y += nextxy.y;
                 this.x += nextxy.x;
 
@@ -500,7 +526,7 @@
                         //if the target box was alive, kill it and record the kill
                         //nice shootin tex!
                         if (!objHit.isDead) {
-                            objHit.die(this);
+                            objHit.die(NowUTC());
 
                             //signalr is the only one updating kills, deaths, and leaderboard
                             //var killer = getObjectFromArray(Boxes, this.sourceId);
@@ -789,7 +815,7 @@
     var Walls = new Array();
 
     var counter = 0;
-    var lastMessageTime = new Date().getUTCDate();
+    var lastMessageTime = NowUTC();
 
     //var x = 25, y = 25;
     //var aim_x, aim_y;
@@ -906,7 +932,7 @@
 
 
     function mousemove(event) {
-        var now = new Date().getUTCDate();
+        var now = NowUTC();
 
         //console.log(now + " " + lastMessageTime)
         if (now - lastMessageTime >= 40) {
@@ -1515,6 +1541,22 @@
         }
     }
 
+
+    function NowUTC() {
+        var now = new Date();
+
+        var year = now.getFullYear();
+        var month = now.getMonth();
+        var day = now.getDate();
+        var hours = now.getHours();
+        var minutes = now.getMinutes();
+        var seconds = now.getSeconds();
+        var mils = now.getMilliseconds();
+
+        return Date.UTC(year, month, day, hours, minutes, seconds, mils);
+    }
+
+
     ////////////////////////////////////////////////
     //
     // BEGIN SIGNALR STUFF
@@ -1771,6 +1813,8 @@
         var pew = new PewPew(new Vector(mag, dir));
         pew.x = x;
         pew.y = y;
+        pew.startx = x;
+        pew.starty = y;
         pew.id = id;
         pew.sourceId = sourceId;
 
