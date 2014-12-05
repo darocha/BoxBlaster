@@ -97,6 +97,7 @@
     <Content Include="Default.html" />
     <Content Include="Iframe.html" />
     <Content Include="Images\loading.gif" />
+    <Content Include="Landing.html" />
     <Content Include="packages.config" />
     <None Include="Scripts\jquery-2.1.1.intellisense.js" />
     <Content Include="Scripts\graphics.js" />
