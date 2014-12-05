@@ -89,6 +89,7 @@ input{
     display: inline-block;
     height: 16px;
     vertical-align: baseline;
+    margin: 0;
 }
 
 #volumeSlider, #colorPicker {
