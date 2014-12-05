@@ -1544,14 +1544,14 @@
 
     function NowUTC() {
         var now = new Date();
-
-        var year = now.getFullYear();
-        var month = now.getMonth();
-        var day = now.getDate();
-        var hours = now.getHours();
-        var minutes = now.getMinutes();
-        var seconds = now.getSeconds();
-        var mils = now.getMilliseconds();
+       
+        var year = now.getUTCFullYear();
+        var month = now.getUTCMonth();
+        var day = now.getUTCDate();
+        var hours = now.getUTCHours();
+        var minutes = now.getUTCMinutes();
+        var seconds = now.getUTCSeconds();
+        var mils = now.getUTCMilliseconds();
 
         return Date.UTC(year, month, day, hours, minutes, seconds, mils);
     }
