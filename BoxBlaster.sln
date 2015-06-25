@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxBlaster", "BoxBlaster\BoxBlaster.csproj", "{D5BF9AB4-0EFF-433F-9E28-5388693FE762}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxBlaster.Test", "BoxBlaster.Test\BoxBlaster.Test.csproj", "{83928CAF-E0C4-4EC0-B07C-183604DE7376}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{D5BF9AB4-0EFF-433F-9E28-5388693FE762}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5BF9AB4-0EFF-433F-9E28-5388693FE762}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5BF9AB4-0EFF-433F-9E28-5388693FE762}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83928CAF-E0C4-4EC0-B07C-183604DE7376}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83928CAF-E0C4-4EC0-B07C-183604DE7376}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83928CAF-E0C4-4EC0-B07C-183604DE7376}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83928CAF-E0C4-4EC0-B07C-183604DE7376}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
