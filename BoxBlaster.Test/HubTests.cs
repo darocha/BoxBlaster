@@ -20,5 +20,12 @@ namespace BoxBlaster.Test
             b.color = "red";
             b.deaths = 10;
         }
+
+        [Test]
+        public void ReloadWallTest()
+        {
+            Blaster b = new Blaster();
+            b.ReloadWall("test");
+        }
     }
 }
