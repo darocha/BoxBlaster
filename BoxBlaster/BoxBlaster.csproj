@@ -97,6 +97,7 @@
     <Content Include="Default.html" />
     <Content Include="Iframe.html" />
     <Content Include="Images\loading.gif" />
+    <Content Include="Landing.html" />
     <Content Include="packages.config" />
     <Content Include="Scripts\graphics.js" />
     <None Include="Scripts\jquery-1.6.4-vsdoc.js" />

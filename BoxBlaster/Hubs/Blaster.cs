@@ -170,7 +170,7 @@ namespace BoxBlaster.Hubs
 		}
 
 
-		public void KilledPlayer(string killerId, string victimId)
+		public void KilledPlayer(string killerId, string victimId, long timestamp)
 		{
 			// grab the objects for the killer and victim
 			var killer = Boxes.Where(b => b.id == killerId).SingleOrDefault();
@@ -191,8 +191,8 @@ namespace BoxBlaster.Hubs
 				vFound = true;
 			}
 
-			if (kFound && vFound)
-				Clients.All.playerKilled(killerId, victimId, killer.kills, victim.deaths, ConvertToUnixTimestamp(DateTime.Now.ToUniversalTime()));
+            if (kFound && vFound)
+                Clients.All.playerKilled(killerId, victimId, killer.kills, victim.deaths, ConvertToUnixTimestamp(DateTime.Now));
 		}
 
 		public void PlayerMoved(string id, float x, float y)
@@ -306,7 +306,7 @@ namespace BoxBlaster.Hubs
         public static double ConvertToUnixTimestamp(DateTime date)
         {
             DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-            TimeSpan diff = date.ToUniversalTime() - origin.ToUniversalTime();
+            TimeSpan diff = date.ToUniversalTime() - origin;
             return Math.Floor(diff.TotalMilliseconds);
         }
 	}

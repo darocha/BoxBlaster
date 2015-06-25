@@ -535,7 +535,7 @@
 
                             //if the player did it, notify signalr
                             if (this.sourceId == MyBox.id)
-                                srKilledPlayer(this.sourceId, objHit.id)
+                                srKilledPlayer(this.sourceId, objHit.id, NowUTC())
 
                             //If the player is the victim, notify signalr -- decided kill should report
                             //.. could get wonky if I minimize or whatever (zombie player...)
@@ -1544,14 +1544,14 @@
 
     function NowUTC() {
         var now = new Date();
-
-        var year = now.getFullYear();
-        var month = now.getMonth();
-        var day = now.getDate();
-        var hours = now.getHours();
-        var minutes = now.getMinutes();
-        var seconds = now.getSeconds();
-        var mils = now.getMilliseconds();
+       
+        var year = now.getUTCFullYear();
+        var month = now.getUTCMonth();
+        var day = now.getUTCDate();
+        var hours = now.getUTCHours();
+        var minutes = now.getUTCMinutes();
+        var seconds = now.getUTCSeconds();
+        var mils = now.getUTCMilliseconds();
 
         return Date.UTC(year, month, day, hours, minutes, seconds, mils);
     }
@@ -1844,9 +1844,9 @@
     //this is called by the pewpew collision handler when I am the killer
     //scratch that... called when I am the victim
     //scatch the scratch... I'll reports my own kills, not deaths
-    function srKilledPlayer(killerId, victimId) {
+    function srKilledPlayer(killerId, victimId, timestamp) {
         if (isSignalrReady) {
-            hub.server.killedPlayer(killerId, victimId);
+            hub.server.killedPlayer(killerId, victimId, timestamp);
             console.log("killedPlayer called");
         }
 
