@@ -27,5 +27,12 @@ namespace BoxBlaster.Test
             Blaster b = new Blaster();
             b.ReloadWall("test");
         }
+
+        [Test]
+        public void ReloadPlayerTest()
+        {
+            Blaster b = new Blaster();
+            b.ReloadPlayer("test");
+        }
     }
 }
